@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SkillSwap — Dashboard</title>
+  <!-- Tailwind via CDN for quick MVP styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for simple charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* small helper for skeleton loading */
+    .skeleton{background:linear-gradient(90deg,#f3f4f6 25%, #eceff1 37%, #f3f4f6 63%);background-size:400% 100%;animation:skeleton-loading 1.2s linear infinite}
+    @keyframes skeleton-loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+  <div class="max-w-7xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold">SkillSwap — Admin Dashboard</h1>
+        <p class="text-sm text-gray-600">Overview of WAU, bookings, credits and notes — MVP</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="refreshBtn" class="px-4 py-2 bg-white border rounded shadow-sm text-sm">Refresh</button>
+        <div class="text-sm text-gray-600">Signed in as <strong id="meName">You</strong></div>
+      </div>
+    </header>
+
+    <!-- Top metrics -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-lg shadow-sm">
+        <div class="text-xs text-gray-500">Weekly Active Users</div>
+        <div id="wau" class="text-2xl font-bold mt-2">—</div>
+        <div id="wauTrend" class="text-sm text-green-600">—</div>
+      </div>
+
+      <div class="bg-white p-4 rounded-lg shadow-sm">
+        <div class="text-xs text-gray-500">Sessions booked / day</div>
+        <div id="sessionsPerDay" class="text-2xl font-bold mt-2">—</div>
+        <div id="sessionsTrend" class="text-sm text-green-600">—</div>
+      </div>
+
+      <div class="bg-white p-4 rounded-lg shadow-sm">
+        <div class="text-xs text-gray-500">Credits exchanged (week)</div>
+        <div id="creditsExchanged" class="text-2xl font-bold mt-2">—</div>
+        <div id="creditsTrend" class="text-sm text-green-600">—</div>
+      </div>
+
+      <div class="bg-white p-4 rounded-lg shadow-sm">
+        <div class="text-xs text-gray-500">Notes downloads (week)</div>
+        <div id="notesDownloaded" class="text-2xl font-bold mt-2">—</div>
+        <div id="notesTrend" class="text-sm text-green-600">—</div>
+      </div>
+    </section>
+
+    <!-- Charts + activity -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div class="col-span-2 bg-white p-4 rounded-lg shadow-sm">
+        <h3 class="font-medium mb-3">Sessions & Credits (last 14 days)</h3>
+        <canvas id="lineChart" height="120"></canvas>
+      </div>
+
+      <div class="bg-white p-4 rounded-lg shadow-sm">
+        <h3 class="font-medium mb-3">Recent Activity</h3>
+        <ul id="activityList" class="space-y-2 text-sm text-gray-700">
+          <!-- filled by JS -->
+        </ul>
+      </div>
+    </section>
+
+    <!-- Tables: Recent sessions, Notes -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-lg shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-medium">Recent Sessions</h3>
+          <a href="#" class="text-sm text-blue-600" id="viewAllSessions">View all</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs text-gray-500">
+              <tr><th class="pb-2">#</th><th class="pb-2">Skill</th><th class="pb-2">Host</th><th class="pb-2">Learner</th><th class="pb-2">Start</th><th class="pb-2">Credits</th></tr>
+            </thead>
+            <tbody id="sessionsTable" class="text-gray-700">
+              <!-- rows inserted by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-lg shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-medium">Recent Notes</h3>
+          <button id="uploadNoteBtn" class="text-sm text-blue-600">Upload</button>
+        </div>
+        <div class="space-y-3" id="notesList">
+          <!-- notes inserted by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Ledger preview -->
+    <section class="bg-white p-4 rounded-lg shadow-sm mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-medium">Credit Ledger (preview)</h3>
+        <div class="text-sm text-gray-500">Showing last 10 transactions</div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-left text-xs text-gray-500"><tr><th>#</th><th>User</th><th>Change</th><th>Reason</th><th>Balance</th><th>Time</th></tr></thead>
+          <tbody id="ledgerTable" class="text-gray-700"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="text-xs text-gray-500 text-center py-6">MVP Dashboard • Connect to your API (see README below)</footer>
+  </div>
+
+  <!-- Simple modal for upload (hidden) -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-full max-w-md">
+      <h3 class="font-medium mb-3">Upload Note (MVP)</h3>
+      <input id="noteTitle" class="w-full mb-2 p-2 border rounded" placeholder="Title" />
+      <input id="noteFile" type="file" class="w-full mb-2" />
+      <div class="flex justify-end gap-2">
+        <button id="cancelUpload" class="px-3 py-2">Cancel</button>
+        <button id="doUpload" class="px-3 py-2 bg-blue-600 text-white rounded">Upload</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*
+      Dashboard client logic (MVP)
+      - The UI works with a mocked data layer by default.
+      - Replace `apiBase` with your backend base URL.
+      - Provided endpoints to implement server-side (see README comments below).
+    */
+
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '/api';
+
+    // --- Mock fetch fallback (use real fetch when endpoints exist) ---
+    async function apiFetch(path, opts={}){
+      try{
+        const res = await fetch(apiBase + path, opts);
+        if(!res.ok) throw new Error('non-200');
+        return await res.json();
+      }catch(e){
+        // Fallback: return mock data so the dashboard remains usable offline
+        return mockData(path);
+      }
+    }
+
+    function mockData(path){
+      if(path.startsWith('/metrics')){
+        return {
+          wau: 1243, wauTrend: '+6.5%', sessionsPerDay: 42, sessionsTrend: '+3%', creditsExchanged: 890, creditsTrend: '+8%', notesDownloaded: 72, notesTrend: '-1%'
+        };
+      }
+      if(path.startsWith('/sessions/recent')){
+        return {data: [
+          {id:1, skill:'Linear Algebra', host:'Priya', learner:'Ravi', start:'2025-11-09 18:00', credits:5},
+          {id:2, skill:'React Hooks', host:'Aman', learner:'Kumud', start:'2025-11-08 20:00', credits:8},
+          {id:3, skill:'Exam Strategy', host:'Sana', learner:'Ritik', start:'2025-11-07 15:00', credits:3}
+        ]};
+      }
+      if(path.startsWith('/notes/recent')){
+        return {data: [
+          {id:33, title:'Calculus Cheatsheet', uploader:'Priya', downloads:12, price_credits:0},
+          {id:82, title:'DSA Patterns', uploader:'Aman', downloads:45, price_credits:10}
+        ]};
+      }
+      if(path.startsWith('/ledger/recent')){
+        return {data: [
+          {id:501,user:'Priya',change:+5,reason:'session complete',balance:120,time:'2025-11-09 18:10'},
+          {id:502,user:'Kumud',change:-5,reason:'booked session',balance:40,time:'2025-11-09 17:55'}
+        ]};
+      }
+
+      return {};
+    }
+
+    // --- render functions ---
+    async function loadMetrics(){
+      const m = await apiFetch('/metrics');
+      document.getElementById('wau').textContent = m.wau;
+      document.getElementById('wauTrend').textContent = m.wauTrend;
+      document.getElementById('sessionsPerDay').textContent = m.sessionsPerDay;
+      document.getElementById('sessionsTrend').textContent = m.sessionsTrend;
+      document.getElementById('creditsExchanged').textContent = m.creditsExchanged;
+      document.getElementById('creditsTrend').textContent = m.creditsTrend;
+      document.getElementById('notesDownloaded').textContent = m.notesDownloaded;
+      document.getElementById('notesTrend').textContent = m.notesTrend;
+    }
+
+    async function loadRecent(){
+      const sessions = await apiFetch('/sessions/recent');
+      const tbody = document.getElementById('sessionsTable'); tbody.innerHTML='';
+      sessions.data.forEach(s=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="py-2">${s.id}</td><td class="py-2">${s.skill}</td><td class="py-2">${s.host}</td><td class="py-2">${s.learner}</td><td class="py-2">${s.start}</td><td class="py-2">${s.credits}</td>`;
+        tbody.appendChild(tr);
+      });
+
+      const notes = await apiFetch('/notes/recent');
+      const notesList = document.getElementById('notesList'); notesList.innerHTML='';
+      notes.data.forEach(n=>{
+        const el = document.createElement('div');
+        el.className = 'p-2 border rounded';
+        el.innerHTML = `<div class="flex justify-between items-center"><div><div class="font-medium">${n.title}</div><div class="text-xs text-gray-500">by ${n.uploader} • ${n.downloads} downloads</div></div><div><button class="text-sm text-blue-600" onclick="downloadNote(${n.id})">Download</button></div></div>`;
+        notesList.appendChild(el);
+      });
+
+      const ledger = await apiFetch('/ledger/recent');
+      const ledgerTbody = document.getElementById('ledgerTable'); ledgerTbody.innerHTML='';
+      ledger.data.forEach(l=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="py-2">${l.id}</td><td class="py-2">${l.user}</td><td class="py-2">${l.change>0?'+':''}${l.change}</td><td class="py-2">${l.reason}</td><td class="py-2">${l.balance}</td><td class="py-2">${l.time}</td>`;
+        ledgerTbody.appendChild(tr);
+      });
+
+      // Activity list
+      const act = document.getElementById('activityList'); act.innerHTML='';
+      act.appendChild(activityItem('Session completed — Priya earned 5 credits'));
+      act.appendChild(activityItem('New note uploaded — DSA Patterns (Aman)'));
+      act.appendChild(activityItem('Booking placed — Kumud booked React Hooks'));
+    }
+
+    function activityItem(text){
+      const li = document.createElement('li'); li.className='flex items-start gap-3';
+      li.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-400 mt-2"></div><div>${text}</div>`;
+      return li;
+    }
+
+    // Chart
+    let lineChart = null;
+    function renderChart(){
+      const ctx = document.getElementById('lineChart').getContext('2d');
+      const labels = Array.from({length:14}).map((_,i)=>{
+        const d = new Date(); d.setDate(d.getDate()- (13-i));
+        return `${d.getMonth()+1}/${d.getDate()}`;
+      });
+      const sessions = labels.map(()=>Math.floor(Math.random()*60)+10);
+      const credits = labels.map(()=>Math.floor(Math.random()*200)+20);
+      if(lineChart) lineChart.destroy();
+      lineChart = new Chart(ctx,{
+        type:'line', data:{labels, datasets:[{label:'Sessions',data:sessions,fill:false,tension:0.3},{label:'Credits',data:credits,fill:false,tension:0.3}]}, options:{interaction:{mode:'index'},plugins:{legend:{position:'top'}}}
+      });
+    }
+
+    // Note download placeholder (will request pre-signed URL from backend)
+    async function downloadNote(noteId){
+      try{
+        const res = await fetch(apiBase + '/notes/'+noteId+'/download');
+        if(!res.ok) throw new Error('no api');
+        const {url} = await res.json();
+        window.open(url, '_blank');
+      }catch(e){
+        alert('No backend detected — this demo uses mock data. Implement GET /notes/:id/download to return a pre-signed S3 URL.');
+      }
+    }
+
+    // Upload modal
+    const modal = document.getElementById('modal');
+    document.getElementById('uploadNoteBtn').addEventListener('click', ()=> modal.classList.remove('hidden'));
+    document.getElementById('cancelUpload').addEventListener('click', ()=> modal.classList.add('hidden'));
+    document.getElementById('doUpload').addEventListener('click', async ()=>{
+      const title = document.getElementById('noteTitle').value.trim();
+      const file = document.getElementById('noteFile').files[0];
+      if(!title || !file){ alert('Provide title and file.'); return; }
+      // Ask backend for a presigned upload URL: POST /notes -> {s3Key, uploadUrl}
+      try{
+        const resp = await fetch(apiBase + '/notes', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({title})});
+        if(!resp.ok) throw new Error('no-api');
+        const {uploadUrl, s3Key} = await resp.json();
+        // Upload file binary directly to S3 using the presigned URL
+        await fetch(uploadUrl, {method:'PUT', body:file});
+        alert('Upload complete — metadata saved.');
+        modal.classList.add('hidden');
+        loadRecent();
+      }catch(e){
+        alert('No backend detected — implement POST /notes to return uploadUrl and s3Key.');
+      }
+    });
+
+    // refresh handler
+    document.getElementById('refreshBtn').addEventListener('click', ()=> init());
+
+    async function init(){
+      document.getElementById('meName').textContent = 'Admin';
+      loadMetrics(); loadRecent(); renderChart();
+    }
+
+    init();
+
+    // README for integrators (quicklist printed to console for engineers)
+    console.log(`
+      SkillSwap Dashboard — Integrator notes:
+      - Endpoints expected by UI (MVP):
+        GET ${apiBase}/metrics
+        GET ${apiBase}/sessions/recent
+        GET ${apiBase}/notes/recent
+        GET ${apiBase}/ledger/recent
+        GET ${apiBase}/notes/:id/download -> {url}
+        POST ${apiBase}/notes -> {uploadUrl, s3Key}
+      - Authentication: UI assumes a JWT stored in Authorization header; update apiFetch to include token.
+      - S3 upload flow: backend should create presigned PUT URL and save notes metadata (title, uploader, s3_key).
+      - Booking and ledger actions are not implemented here; they require POST /sessions and POST /credits endpoints.
+      - To run locally: serve this file with a static server ("npx serve" or "python -m http.server 8000") and point apiBase to your dev backend.
+    `);
+  </script>
+</body>
+</html>
