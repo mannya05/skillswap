@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat — SkillSwap</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --brand:#0f172a;
+      --accent:#2563eb;
+      --radius:12px;
+      --max-width:1100px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background: linear-gradient(180deg,#fbfdff, var(--bg));
+      color:var(--brand);
+      padding:22px;
+      display:flex;
+      justify-content:center;
+    }
+    .app {
+      width:100%;
+      max-width:var(--max-width);
+      display:grid;
+      grid-template-columns:320px 1fr;
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width:920px){ .app{ grid-template-columns:1fr } }
+
+    /* Left: conversations */
+    .panel {
+      background:var(--card);
+      border-radius:12px;
+      padding:12px;
+      border:1px solid rgba(15,23,42,0.04);
+      box-shadow:0 10px 30px rgba(2,6,23,0.04);
+    }
+    .search { display:flex; gap:8px; margin-bottom:10px; }
+    .search input { flex:1; padding:9px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06) }
+
+    .conversations { display:flex; flex-direction:column; gap:8px; max-height:66vh; overflow:auto; padding-right:4px }
+    .conv {
+      display:flex; gap:10px; align-items:center; padding:10px; border-radius:10px; cursor:pointer;
+      transition:background .12s;
+    }
+    .conv:hover { background:linear-gradient(180deg,#fff,#fbfdff) }
+    .conv.active { background: linear-gradient(180deg,#eef2ff,#f7fbff); border-left:3px solid var(--accent) }
+    .avatar { width:44px; height:44px; border-radius:8px; background:#eef2ff; display:flex; align-items:center; justify-content:center; font-weight:700; color:#0f172a }
+    .meta { flex:1; min-width:0 }
+    .meta .name { font-weight:700; font-size:14px }
+    .meta .last { font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .time { font-size:12px; color:var(--muted) }
+
+    /* Right: chat area */
+    .chat-area {
+      background:transparent;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .chat-header {
+      display:flex; align-items:center; gap:12px; padding:12px; background:var(--card); border-radius:12px; border:1px solid rgba(15,23,42,0.04);
+    }
+    .chat-window {
+      background:var(--card);
+      border-radius:12px;
+      padding:16px;
+      min-height:50vh;
+      max-height:60vh;
+      overflow:auto;
+      border:1px solid rgba(15,23,42,0.03);
+    }
+    .msg { max-width:70%; padding:10px 12px; border-radius:12px; margin-bottom:8px; line-height:1.35; font-size:14px; }
+    .msg.me { margin-left:auto; background: linear-gradient(180deg,#dcfce7,#bbf7d0); }
+    .msg.other { background: linear-gradient(180deg,#fff,#f8fafc); border:1px solid rgba(15,23,42,0.03) }
+    .ts { display:block; font-size:11px; color:var(--muted); margin-top:6px; }
+
+    .typing { font-size:13px; color:var(--muted); display:flex; gap:6px; align-items:center; }
+    .dots { width:36px; height:12px; display:inline-block }
+    .dots span { display:inline-block; width:6px; height:6px; background:#c7d2fe; border-radius:50%; margin-right:4px; animation:blink 1.2s infinite; opacity:0.4 }
+    .dots span:nth-child(2) { animation-delay:.15s }
+    .dots span:nth-child(3) { animation-delay:.3s }
+    @keyframes blink { 0%{opacity:.2} 50%{opacity:1} 100%{opacity:.2} }
+
+    .composer {
+      display:flex; gap:8px; align-items:center; padding:10px; background:var(--card); border-radius:12px; border:1px solid rgba(15,23,42,0.04);
+    }
+    .composer input[type="text"] { flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(15,23,42,0.06) }
+    .composer button { padding:9px 12px; border-radius:10px; border:0; background:var(--accent); color:white; font-weight:700; cursor:pointer }
+    .composer .attach { background:transparent; border:1px dashed rgba(15,23,42,0.06); padding:8px; border-radius:8px; cursor:pointer }
+
+    /* small helpers */
+    .muted { color:var(--muted) }
+    .empty { text-align:center; padding:40px; color:var(--muted) }
+
+    /* file preview */
+    .attach-preview { display:flex; gap:10px; align-items:center; margin-top:8px }
+    .attach-preview .file { background:#fff; border:1px solid rgba(15,23,42,0.03); padding:8px 10px; border-radius:8px; font-size:13px }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: Conversations -->
+    <aside class="panel" aria-label="Conversations">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <strong>Chats</strong>
+          <div class="muted" style="font-size:13px">Recent conversations</div>
+        </div>
+        <div class="muted" style="font-size:13px">Signed in as <strong>Kumud</strong></div>
+      </div>
+
+      <div class="search">
+        <input id="convSearch" placeholder="Search people or notes..." />
+        <button id="newConvBtn" title="New conversation" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:white">New</button>
+      </div>
+
+      <div class="conversations" id="convList" role="list" aria-label="Conversation list">
+        <!-- populated by JS -->
+      </div>
+    </aside>
+
+    <!-- RIGHT: Chat area -->
+    <main class="chat-area">
+      <div class="chat-header" id="chatHeader">
+        <div class="avatar" id="chatAvatar">U</div>
+        <div style="flex:1">
+          <div id="chatName" style="font-weight:700">Select a conversation</div>
+          <div class="muted" id="chatSub">Last seen —</div>
+        </div>
+        <div class="muted" id="chatOptions">...</div>
+      </div>
+
+      <div class="chat-window" id="chatWindow" aria-live="polite">
+        <div class="empty" id="emptyHint">No conversation selected. Pick someone on the left or start a new chat.</div>
+      </div>
+
+      <div class="composer" id="composer" style="display:none">
+        <label class="attach" title="Attach file">
+          <input type="file" id="attachFile" style="display:none" />
+          📎
+        </label>
+        <input id="messageInput" type="text" placeholder="Write a message..." aria-label="Message input" />
+        <button id="sendBtn">Send</button>
+      </div>
+      <div id="attachPreviewHolder"></div>
+    </main>
+  </div>
+
+  <script>
+    /*************************************************************************
+     * Human-like chat UI (vanilla JS)
+     * - Uses mock conversations when no backend is present
+     * - Has placeholders for WebSocket usage
+     * - Optimistic rendering for sending messages
+     *************************************************************************/
+
+    // configuration
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '/api';
+    // If you have a websocket: const wsUrl = 'wss://api.example.com/ws';
+    // For demo we use mock
+    let conversations = mockConversations();
+    let activeConvId = null;
+
+    const convListEl = document.getElementById('convList');
+    const convSearch = document.getElementById('convSearch');
+    const chatWindow = document.getElementById('chatWindow');
+    const chatName = document.getElementById('chatName');
+    const chatSub = document.getElementById('chatSub');
+    const chatAvatar = document.getElementById('chatAvatar');
+    const composer = document.getElementById('composer');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const attachFile = document.getElementById('attachFile');
+    const attachPreviewHolder = document.getElementById('attachPreviewHolder');
+    const emptyHint = document.getElementById('emptyHint');
+
+    // initial render
+    renderConversations();
+
+    // search
+    convSearch.addEventListener('input', debounce(renderConversations, 200));
+
+    // new conversation
+    document.getElementById('newConvBtn').addEventListener('click', ()=> {
+      const name = prompt('Start a new conversation with (name or note title):');
+      if(!name) return;
+      const id = Date.now();
+      const conv = { id, name, avatar: initials(name), last: 'just now', messages: [], unread:0 };
+      conversations.unshift(conv);
+      renderConversations();
+      selectConversation(id);
+      messageInput.focus();
+    });
+
+    // attach file
+    attachFile.addEventListener('change', (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      showAttachPreview(f);
+    });
+
+    // send
+    sendBtn.addEventListener('click', doSend);
+    messageInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') doSend(); });
+
+    // helpers
+    function renderConversations(){
+      const q = (convSearch.value || '').toLowerCase();
+      convListEl.innerHTML = '';
+      const list = conversations.filter(c => (c.name + (c.lastMessage || '')).toLowerCase().includes(q));
+      if(list.length === 0){ convListEl.innerHTML = '<div class="empty">No conversations</div>'; return; }
+      list.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'conv' + (c.id === activeConvId ? ' active' : '');
+        el.innerHTML = `
+          <div class="avatar">${c.avatar || initials(c.name)}</div>
+          <div class="meta">
+            <div class="name">${escapeHtml(c.name)}</div>
+            <div class="last">${escapeHtml(c.lastMessage || 'No messages yet')}</div>
+          </div>
+          <div class="time">${c.last}</div>
+        `;
+        el.addEventListener('click', ()=> selectConversation(c.id));
+        convListEl.appendChild(el);
+      });
+    }
+
+    function selectConversation(id){
+      activeConvId = id;
+      const conv = conversations.find(x=>x.id===id);
+      if(!conv) return;
+      // header
+      chatName.textContent = conv.name;
+      chatSub.textContent = conv.sub || `Last active: ${conv.last}`;
+      chatAvatar.textContent = conv.avatar || initials(conv.name);
+      // composer
+      composer.style.display = 'flex';
+      emptyHint.style.display = 'none';
+      // render messages
+      chatWindow.innerHTML = '';
+      if(conv.messages.length === 0){
+        chatWindow.innerHTML = '<div class="empty">Say hi — start the conversation.</div>';
+      } else {
+        conv.messages.forEach(m => appendMessageToWindow(m));
+      }
+      // scroll to bottom
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+      // re-render conversations list to highlight active
+      renderConversations();
+    }
+
+    function appendMessageToWindow(m){
+      const el = document.createElement('div');
+      el.className = 'msg ' + (m.from === 'me' ? 'me' : 'other');
+      el.innerHTML = `<div>${escapeHtml(m.text)}</div><span class="ts">${formatTs(m.ts)}</span>`;
+      chatWindow.appendChild(el);
+    }
+
+    function doSend(){
+      const text = messageInput.value.trim();
+      const file = attachFile.files && attachFile.files[0];
+      if(!text && !file) return;
+      const conv = conversations.find(x=>x.id===activeConvId);
+      if(!conv) {
+        alert('Select a conversation first.');
+        return;
+      }
+
+      // optimistic message
+      const msg = { id: 'm' + Date.now(), from: 'me', text: text || (file ? file.name : ''), ts: new Date().toISOString(), pending:true };
+      conv.messages.push(msg);
+      conv.lastMessage = msg.text;
+      conv.last = 'just now';
+      renderConversations();
+      appendMessageToWindow(msg);
+      messageInput.value = '';
+      clearAttachPreview();
+
+      // pretend to send to backend (replace with fetch / websocket logic)
+      fakeApiSendMessage(conv.id, msg, file)
+        .then(serverMsg => {
+          // replace pending flag (in real API you would update id/ts)
+          msg.pending = false;
+          msg.ts = serverMsg.ts;
+          // update UI timestamps
+          renderConversations();
+          // re-render messages to show updated ts (cheap approach)
+          // (in a real app you'd patch the specific message DOM)
+        })
+        .catch(()=> {
+          // mark as failed (simple UX)
+          alert('Message not delivered (demo). Wire real API for production.');
+        });
+      // scroll
+      chatWindow.scrollTop = chatWindow.scrollHeight + 200;
+    }
+
+    // simulated backend call (returns a promise)
+    function fakeApiSendMessage(convId, msg, file){
+      return new Promise((resolve, reject)=>{
+        setTimeout(()=> {
+          // pretend success ~90%
+          if(Math.random() < 0.9){
+            resolve({ ok:true, ts: new Date().toISOString() });
+          } else reject(new Error('network'));
+        }, 600 + Math.random()*400);
+      });
+    }
+
+    // small utilities
+    function initials(name){
+      return (name || 'U').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
+    }
+    function formatTs(ts){
+      try{
+        const d = new Date(ts);
+        return d.toLocaleString();
+      }catch(e){ return ts; }
+    }
+    function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function debounce(fn, wait){
+      let t;
+      return function(){ clearTimeout(t); t = setTimeout(()=>fn.apply(this, arguments), wait); }
+    }
+
+    // attach preview
+    function showAttachPreview(file){
+      attachPreviewHolder.innerHTML = '';
+      const box = document.createElement('div');
+      box.className = 'attach-preview';
+      box.innerHTML = `<div class="file">${escapeHtml(file.name)} • ${Math.round(file.size/1024)} KB</div><button style="padding:6px 8px;border-radius:8px;border:0;background:#ef4444;color:#fff;cursor:pointer" onclick="clearAttachPreview()">Remove</button>`;
+      attachPreviewHolder.appendChild(box);
+    }
+    function clearAttachPreview(){
+      attachPreviewHolder.innerHTML = '';
+      attachFile.value = '';
+    }
+
+    // small mock data
+    function mockConversations(){
+      return [
+        {
+          id: 1, name: 'Priya — Linear Algebra', avatar: 'P', last: 'Nov 9 18:10',
+          lastMessage: 'Thanks — that was helpful!',
+          sub: 'Host • 5 credits',
+          messages: [
+            { id:'m1', from:'other', text:'Can we cover eigenvectors tomorrow?', ts:'2025-11-09T16:20:00Z' },
+            { id:'m2', from:'me', text:'Sure — 6 pm works for me.', ts:'2025-11-09T16:25:00Z' },
+            { id:'m3', from:'other', text:'Great, booked.', ts:'2025-11-09T16:30:00Z' }
+          ]
+        },
+        {
+          id: 2, name: 'Aman — DSA Patterns', avatar: 'A', last: 'Nov 8 09:12',
+          lastMessage: 'Sent the notes — check your downloads',
+          sub: 'Notes • 10 credits',
+          messages: [
+            { id:'m1', from:'other', text:'Would you share the latest DSA Patterns notes?', ts:'2025-11-08T08:12:00Z' },
+            { id:'m2', from:'me', text:'Uploaded — check downloads tab.', ts:'2025-11-08T09:10:00Z' },
+          ]
+        },
+        {
+          id: 3, name: 'Neha — Exam Strategy', avatar: 'N', last: 'Oct 31 20:00',
+          lastMessage: 'Thanks again!',
+          sub: 'Learner',
+          messages: [
+            { id:'m1', from:'other', text:'I booked a 1-1 session for exam tips.', ts:'2025-10-30T19:50:00Z' },
+            { id:'m2', from:'me', text:'See you then — bring a list of problem areas.', ts:'2025-10-30T19:55:00Z' },
+          ]
+        }
+      ];
+    }
+
+    // keyboard shortcuts (enter sends when focused)
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape'){
+        // clear composer quickly
+        messageInput.value = '';
+        clearAttachPreview();
+      }
+    });
+
+    // accessibility / small nicety: focus input when conversation selected
+    convListEl.addEventListener('click', ()=> setTimeout(()=> messageInput.focus(), 120));
+  </script>
+</body>
+</html>
