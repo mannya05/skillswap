@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Create Skill — SkillSwap</title>
+  <style>
+    /* --- Base --- */
+    :root{
+      --bg:#f6f7f8;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --brand:#2563eb;
+      --accent:#0ea5a4;
+      --danger:#ef4444;
+      --radius:10px;
+      --max-width:900px;
+      --glass: rgba(255,255,255,0.7);
+    }
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:
+        linear-gradient(180deg, rgba(37,99,235,0.035), rgba(14,165,164,0.02)),
+        var(--bg);
+      color:#0f172a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:28px;
+      box-sizing:border-box;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+    }
+
+    /* --- Container --- */
+    .container{
+      width:100%;
+      max-width:var(--max-width);
+      background:linear-gradient(180deg, rgba(255,255,255,0.9), var(--card));
+      border-radius:12px;
+      box-shadow: 0 10px 30px rgba(16,24,40,0.06);
+      padding:22px;
+      border:1px solid rgba(15,23,42,0.04);
+    }
+
+    header {
+      display:flex;
+      gap:16px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    .logo {
+      width:56px; height:56px; border-radius:10px;
+      background: linear-gradient(135deg,var(--brand),var(--accent));
+      display:flex; align-items:center; justify-content:center;
+      color:white; font-weight:700; font-size:18px; box-shadow:0 4px 12px rgba(37,99,235,0.12);
+    }
+    header h1 { margin:0; font-size:18px; }
+    header p { margin:0; color:var(--muted); font-size:13px; }
+
+    /* --- Form --- */
+    form.create-skill {
+      display:grid;
+      grid-template-columns: 1fr 320px;
+      gap:18px;
+      align-items:start;
+    }
+
+    .card {
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:14px;
+      border:1px solid rgba(15,23,42,0.03);
+    }
+
+    .main .field { margin-bottom:12px; }
+    label {
+      display:block;
+      font-weight:600;
+      font-size:13px;
+      margin-bottom:6px;
+    }
+    .hint { font-size:12px; color:var(--muted); margin-top:6px; }
+
+    input[type="text"], input[type="number"], select, textarea {
+      width:100%;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid rgba(15,23,42,0.06);
+      font-size:14px;
+      box-sizing:border-box;
+      background:linear-gradient(180deg,#fff,#fbfdff);
+      transition:box-shadow .12s, border-color .12s;
+    }
+    input:focus, textarea:focus, select:focus{
+      outline:none;
+      box-shadow:0 6px 18px rgba(37,99,235,0.08);
+      border-color:var(--brand);
+    }
+    textarea { min-height:120px; resize:vertical; }
+
+    .row { display:flex; gap:10px; }
+    .col { flex:1; }
+
+    .tags {
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
+    }
+    .tag {
+      padding:6px 10px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:600; font-size:13px;
+      display:inline-flex; align-items:center; gap:8px;
+    }
+    .tag button { background:none; border:0; cursor:pointer; color:#374151; font-weight:700; padding:0; line-height:1; }
+
+    .file-preview {
+      margin-top:8px; font-size:13px; color:var(--muted);
+      display:flex; gap:10px; align-items:center;
+    }
+    .file-preview .name { font-weight:600; color:#0f172a; }
+
+    .meta {
+      font-size:12px; color:var(--muted); margin-top:6px;
+    }
+
+    /* sidebar */
+    .sidebar .small { font-size:13px; color:var(--muted); margin-bottom:10px; }
+    .price-box { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+    .credit-pill {
+      background:#fffbeb; color:#92400e; padding:8px 10px; border-radius:8px; font-weight:700; font-size:13px;
+      border:1px dashed rgba(146,64,14,0.06);
+    }
+
+    /* actions */
+    .actions {
+      display:flex; gap:8px; justify-content:flex-end; margin-top:12px;
+    }
+    button.btn {
+      padding:10px 14px; border-radius:8px; border:0; font-weight:600; cursor:pointer; font-size:14px;
+    }
+    .btn.primary { background:var(--brand); color:white; box-shadow: 0 6px 18px rgba(37,99,235,0.12); }
+    .btn.ghost { background:transparent; color:var(--muted); border:1px solid rgba(15,23,42,0.05); }
+
+    .small-muted { font-size:12px; color:var(--muted); }
+
+    /* responsive */
+    @media (max-width:920px){
+      form.create-skill { grid-template-columns:1fr; }
+      .sidebar { order:2; }
+    }
+
+    /* subtle "handwritten" touches to make it feel human */
+    .note {
+      font-size:12px; color:#334155; background:linear-gradient(180deg,#f8fafc,#ffffff); padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.03);
+    }
+
+    /* error */
+    .error { color:var(--danger); font-size:13px; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <header>
+      <div class="logo" aria-hidden>SS</div>
+      <div>
+        <h1>Create a Skill • Share knowledge, earn credits</h1>
+        <p>Fill the form below to publish a skill or notes. Keep it clear and search-friendly.</p>
+      </div>
+    </header>
+
+    <form class="create-skill" id="skillForm" onsubmit="return handleSubmit(event)" novalidate>
+      <!-- LEFT: Main fields -->
+      <div class="card main" aria-labelledby="main-heading">
+        <h2 id="main-heading" style="margin-top:0;margin-bottom:10px;font-size:15px;">Skill details</h2>
+
+        <div class="field">
+          <label for="title">Title</label>
+          <input id="title" name="title" type="text" placeholder="e.g. 'Crash course: React Hooks & Patterns'" maxlength="120" required />
+          <div class="hint">Keep it concise and include the primary topic. Max 120 characters.</div>
+        </div>
+
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" placeholder="Short overview, what students will learn, prerequisites..." required></textarea>
+          <div class="hint">Tip: mention outcomes (e.g., 'By the end you'll be able to...').</div>
+        </div>
+
+        <div class="field">
+          <label for="tagInput">Tags</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input id="tagInput" type="text" placeholder="Add a tag and press Enter (e.g. 'react', 'algebra')" />
+            <button type="button" class="btn ghost" onclick="addTagFromInput()">Add</button>
+          </div>
+          <div class="tags" id="tagList" aria-live="polite" aria-atomic="true"></div>
+          <div class="hint">Tags help discovery — include topic, level, and format (notes, live).</div>
+        </div>
+
+        <div class="row">
+          <div class="col field">
+            <label for="level">Level</label>
+            <select id="level" name="level">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate" selected>Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+
+          <div class="col field">
+            <label for="format">Format</label>
+            <select id="format" name="format">
+              <option value="live">Live session</option>
+              <option value="notes" selected>Notes / Document</option>
+              <option value="recorded">Recorded video</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="file">Attach file (optional)</label>
+          <input id="file" name="file" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" onchange="previewFile(event)" />
+          <div class="file-preview" id="filePreview" aria-hidden="true" style="display:none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M12 2v12" stroke="#111827" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 8l6-6 6 6" stroke="#111827" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 21H3" stroke="#111827" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div>
+              <div class="name" id="fileName">filename.pdf</div>
+              <div class="meta" id="fileMeta">PDF • 120 KB</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="notes">Notes for students (optional)</label>
+          <textarea id="notes" name="notes" placeholder="Special instructions, what to bring, recommended pre-reading..."></textarea>
+          <div class="hint">This appears on the booking page and in the note preview.</div>
+        </div>
+
+        <div class="field">
+          <label for="contentPreview">Preview (write 1–2 lines that appear in search)</label>
+          <input id="contentPreview" type="text" placeholder="e.g. '2-hour live workshop + downloadable notes'"/>
+          <div class="hint">Short preview shown in listings (keep it punchy).</div>
+        </div>
+
+        <div style="margin-top:6px;" class="note">
+          <strong style="display:block;margin-bottom:6px;">Reminder</strong>
+          Files are uploaded to your organization's S3. Backend will create a presigned URL — the client uploads directly.
+        </div>
+
+        <div class="actions" style="margin-top:14px;">
+          <button type="button" class="btn ghost" onclick="resetForm()">Reset</button>
+          <button type="submit" class="btn primary">Publish skill</button>
+        </div>
+
+        <div id="formError" class="error" role="alert" style="display:none;"></div>
+      </div>
+
+      <!-- RIGHT: Sidebar / pricing / visibility -->
+      <aside class="card sidebar" aria-labelledby="sidebar-heading">
+        <h3 id="sidebar-heading" style="margin-top:0;margin-bottom:8px;font-size:14px;">Pricing & visibility</h3>
+
+        <div class="small">Credit price (optional)</div>
+        <div class="price-box">
+          <div style="flex:1;">
+            <input id="priceCredits" type="number" min="0" step="1" placeholder="Credits (e.g. 10)" />
+            <div class="hint">If left empty or 0, this skill is free to exchange for time or used for barter sessions.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label style="display:block;font-weight:600;font-size:13px;margin-bottom:8px;">Payment options</label>
+          <div style="display:flex;gap:8px;flex-direction:column;">
+            <label><input type="checkbox" id="allowCash" checked /> Allow cash payments (Stripe, Razorpay)</label>
+            <label><input type="checkbox" id="allowCredits" checked /> Accept time-credits</label>
+          </div>
+          <div class="hint">You can accept both — learners pick at checkout.</div>
+        </div>
+
+        <hr style="margin:12px 0;border:0;border-top:1px solid rgba(15,23,42,0.04)">
+
+        <div>
+          <label style="font-weight:600;font-size:13px;margin-bottom:6px;display:block;">Visibility</label>
+          <select id="visibility">
+            <option value="public" selected>Public — searchable</option>
+            <option value="private">Private — link only</option>
+            <option value="draft">Draft — not visible</option>
+          </select>
+          <div class="hint">Choose who can find this skill on the platform.</div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="small-muted">Preview of how this will appear in lists:</div>
+          <div style="margin-top:8px;padding:10px;border-radius:8px;background:linear-gradient(180deg,#fff,#fcfeff);border:1px solid rgba(15,23,42,0.03);">
+            <div style="font-weight:700" id="previewTitle">(title)</div>
+            <div style="font-size:13px;color:var(--muted);" id="previewMeta">Intermediate • Notes • free</div>
+            <div style="margin-top:8px;color:#0f172a;font-size:13px;" id="previewShort">Short preview text...</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div class="small-muted">Moderation</div>
+          <div class="hint" style="margin-top:6px;">All uploads are scanned. Flagged content will be reviewed by admins.</div>
+        </div>
+      </aside>
+    </form>
+  </div>
+
+  <script>
+    // Very small, human-style script: tag chips, preview, basic validation.
+    const tagInput = document.getElementById('tagInput');
+    const tagList = document.getElementById('tagList');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewMeta = document.getElementById('previewMeta');
+    const previewShort = document.getElementById('previewShort');
+    const filePreview = document.getElementById('filePreview');
+    const fileName = document.getElementById('fileName');
+    const fileMeta = document.getElementById('fileMeta');
+    const formError = document.getElementById('formError');
+
+    let tags = [];
+
+    // helper: sanitize simple tag text
+    function cleanTag(t){
+      return t.trim().toLowerCase().replace(/[^\w\- ]/g,'').slice(0,28);
+    }
+
+    function renderTags(){
+      tagList.innerHTML = '';
+      tags.forEach((t, i) => {
+        const el = document.createElement('span');
+        el.className = 'tag';
+        el.innerHTML = `<span>#${t}</span><button aria-label="remove tag" onclick="removeTag(${i})">&times;</button>`;
+        tagList.appendChild(el);
+      });
+      updatePreview();
+    }
+
+    function addTagFromInput(){
+      const raw = tagInput.value || '';
+      const t = cleanTag(raw);
+      if(!t) return;
+      if(tags.includes(t)) { tagInput.value=''; return; }
+      tags.push(t);
+      tagInput.value = '';
+      renderTags();
+    }
+    tagInput.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') { e.preventDefault(); addTagFromInput(); }
+    });
+
+    window.removeTag = function(i){
+      tags.splice(i,1); renderTags();
+    };
+
+    function previewFile(e){
+      const f = e.target.files && e.target.files[0];
+      if(!f){ filePreview.style.display='none'; return; }
+      fileName.textContent = f.name;
+      fileMeta.textContent = `${Math.round(f.size/1024)} KB • ${f.type || 'file'}`;
+      filePreview.style.display='flex';
+    }
+
+    // preview updates
+    function updatePreview(){
+      const title = document.getElementById('title').value.trim() || '(title)';
+      const lvl = document.getElementById('level').value;
+      const fmt = document.getElementById('format').value;
+      const price = document.getElementById('priceCredits').value;
+      previewTitle.textContent = title;
+      previewMeta.textContent = `${capitalize(lvl)} • ${capitalize(fmt)} • ${price ? price + ' credits' : 'free'}`;
+      previewShort.textContent = document.getElementById('contentPreview').value || 'Short preview text...';
+    }
+
+    // tiny helpers
+    function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+    ['title','level','format','priceCredits','contentPreview'].forEach(id=>{
+      document.getElementById(id).addEventListener('input', updatePreview);
+    });
+
+    // Reset
+    function resetForm(){
+      if(!confirm('Reset the form?')) return;
+      document.getElementById('skillForm').reset();
+      tags = [];
+      renderTags();
+      filePreview.style.display='none';
+      updatePreview();
+      formError.style.display = 'none';
+    }
+
+    // Submit: mocked client behavior — in real app, you'd POST metadata & then upload file to presigned URL
+    function handleSubmit(e){
+      e.preventDefault();
+      formError.style.display = 'none';
+      const title = document.getElementById('title').value.trim();
+      const desc = document.getElementById('description').value.trim();
+      const format = document.getElementById('format').value;
+      const price = Number(document.getElementById('priceCredits').value || 0);
+
+      // basic validation
+      if(!title) return showError('Please add a descriptive title for your skill.');
+      if(!desc) return showError('Add a short description so learners know what to expect.');
+      if(tags.length === 0) return showError('Add at least one tag to help discovery (e.g., react, algebra).');
+      if(price < 0) return showError('Price cannot be negative.');
+
+      // collect payload
+      const payload = {
+        title, description:desc, tags, level:document.getElementById('level').value,
+        format, price_credits: price, visibility: document.getElementById('visibility').value,
+        notes: document.getElementById('notes').value || '',
+        previewText: document.getElementById('contentPreview').value || '',
+      };
+
+      // Simulate backend call — in production: POST /notes or POST /skills to create metadata -> backend returns uploadUrl
+      console.log('Would send payload to backend:', payload);
+
+      // friendly success message
+      alert('Skill published (demo). In your real app, this step should POST metadata and then upload the file to S3 using a presigned URL.');
+      // optionally reset or redirect:
+      // resetForm();
+      return false;
+    }
+
+    function showError(msg){
+      formError.textContent = msg;
+      formError.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Small UX nicety: show some sample tags to start with the feel of a human site
+    (function seed(){
+      tags = ['react','frontend','exam-prep'];
+      renderTags();
+      updatePreview();
+    })();
+  </script>
+</body>
+</html>
