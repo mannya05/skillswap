@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Resources — SkillSwap</title>
+  <style>
+    :root{
+      --bg: #f7fafc;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-2: #0ea5a4;
+      --radius: 12px;
+      --max-width: 1100px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background: linear-gradient(180deg,#fbfdff,var(--bg));
+      color:#0f172a;
+      padding:26px;
+      display:flex;
+      justify-content:center;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:var(--max-width);
+    }
+
+    header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:16px; }
+    header h1 { margin:0; font-size:20px; }
+    header p { margin:2px 0 0 0; color:var(--muted); font-size:13px; }
+
+    .panel {
+      background:var(--card);
+      padding:14px;
+      border-radius:14px;
+      border:1px solid rgba(15,23,42,0.04);
+      box-shadow:0 10px 30px rgba(2,6,23,0.04);
+    }
+
+    .toolbar {
+      display:flex; gap:12px; align-items:center; margin:12px 0 16px 0; flex-wrap:wrap;
+    }
+    .search { flex:1; display:flex; gap:8px; align-items:center; min-width:220px; }
+    .search input{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(15,23,42,0.06); font-size:14px; }
+    .select, .btn { padding:9px 12px; border-radius:10px; border:1px solid rgba(15,23,42,0.06); background:white; cursor:pointer; font-weight:600 }
+    .btn.primary { background:var(--accent); color:white; border:0; box-shadow:0 8px 20px rgba(37,99,235,0.12) }
+
+    .filters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .chip { padding:8px 10px; border-radius:999px; background:#f1f5f9; color:var(--muted); font-weight:600; cursor:pointer; border:1px solid rgba(15,23,42,0.03) }
+    .chip.active { background:linear-gradient(90deg,#e0f2fe,#eef2ff); color:var(--accent); border-color:rgba(37,99,235,0.08) }
+
+    .layout-toggle { display:flex; gap:6px; align-items:center; }
+
+    .content { display:grid; grid-template-columns:1fr 320px; gap:14px; }
+    @media (max-width:980px){ .content { grid-template-columns:1fr } }
+
+    /* resources grid/list */
+    .resources { display:grid; gap:12px; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); }
+    .res-card {
+      background:linear-gradient(180deg,#fff,#fcfeff);
+      border-radius:12px; padding:12px; border:1px solid rgba(15,23,42,0.03); display:flex; flex-direction:column; gap:8px;
+    }
+    .res-top { display:flex; gap:10px; align-items:flex-start; }
+    .thumb { width:56px; height:56px; border-radius:8px; background:#eef2ff; display:flex; align-items:center; justify-content:center; font-weight:800; color:#0f172a }
+    .res-title { font-weight:700; font-size:15px; margin-bottom:4px }
+    .res-meta { font-size:13px; color:var(--muted) }
+
+    .res-actions { display:flex; gap:8px; margin-top:auto; }
+    .res-btn { padding:8px 10px; border-radius:10px; border:1px solid rgba(15,23,42,0.06); background:white; cursor:pointer; font-weight:700 }
+
+    .list-view { display:block; }
+    .list-row { display:flex; gap:12px; align-items:center; padding:10px; border-radius:10px; border:1px solid rgba(15,23,42,0.03); background:#fff; }
+    .list-row + .list-row { margin-top:8px; }
+
+    /* sidebar upload + stats */
+    .sidebar { display:flex; flex-direction:column; gap:12px; }
+    .uploader { padding:12px; border-radius:10px; border:1px dashed rgba(15,23,42,0.06); background:linear-gradient(180deg,#fff,#fbffff) }
+    .uploader input[type=file] { display:none; }
+    .stats { padding:12px; border-radius:10px; border:1px solid rgba(15,23,42,0.03); background:linear-gradient(180deg,#fff,#fcfeff) }
+    .stat { display:flex; justify-content:space-between; margin-bottom:6px; color:var(--muted); font-size:14px }
+
+    .pagination { display:flex; gap:8px; justify-content:center; align-items:center; margin-top:14px; }
+
+    .empty { text-align:center; padding:24px; color:var(--muted) }
+
+    /* subtle human-like touches */
+    .hint { font-size:13px; color:var(--muted) }
+    .muted { color:var(--muted) }
+    .small { font-size:13px }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Resources</h1>
+        <p class="muted">Search and manage notes, PDFs, and study material shared by the community.</p>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="small muted">Signed in as <strong>Kumud</strong></div>
+      </div>
+    </header>
+
+    <div class="panel">
+      <div class="toolbar" role="region" aria-label="Controls">
+        <div class="search">
+          <input id="search" placeholder="Search title, uploader, tag..." />
+          <button class="select" id="clearSearch" title="Clear">Clear</button>
+        </div>
+
+        <div class="filters" id="filterRow" aria-label="Filters">
+          <div class="chip active" data-filter="all">All</div>
+          <div class="chip" data-filter="notes">Notes</div>
+          <div class="chip" data-filter="slides">Slides</div>
+          <div class="chip" data-filter="assignments">Assignments</div>
+          <div class="chip" data-filter="video">Video</div>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <div class="layout-toggle">
+          <button class="select" id="gridBtn" title="Grid view">Grid</button>
+          <button class="select" id="listBtn" title="List view">List</button>
+          <button class="btn primary" id="uploadBtn">Upload</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- main -->
+        <div>
+          <div id="results" aria-live="polite">
+            <div class="resources" id="resourceGrid">
+              <!-- cards injected by JS -->
+            </div>
+
+            <div id="listView" style="display:none">
+              <!-- list rows injected by JS -->
+            </div>
+
+            <div class="pagination" id="pagination">
+              <!-- pagination controls -->
+            </div>
+          </div>
+        </div>
+
+        <!-- sidebar -->
+        <aside class="sidebar">
+          <div class="uploader">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-weight:800">Upload resource</div>
+                <div class="hint" style="margin-top:6px">PDF, PPT, DOCX, or ZIP. Files are scanned & watermarked on download.</div>
+              </div>
+              <label for="fileInput" style="cursor:pointer" class="btn">Choose</label>
+            </div>
+
+            <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx,.doc,.docx,.zip,.txt" />
+            <div id="uploadMeta" style="margin-top:10px; display:none">
+              <input id="uploadTitle" placeholder="Title (required)" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06)" />
+              <input id="uploadTags" placeholder="Tags (comma separated)" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);margin-top:8px" />
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <button class="btn primary" id="startUpload">Start upload</button>
+                <button class="select" id="cancelUpload">Cancel</button>
+              </div>
+              <div id="uploaderHint" class="hint" style="margin-top:8px">Tip: larger files may take longer. The backend should return a presigned URL for upload.</div>
+            </div>
+          </div>
+
+          <div class="stats">
+            <div style="font-weight:800">Quick stats</div>
+            <div class="stat"><span>Notes</span><strong id="statNotes">0</strong></div>
+            <div class="stat"><span>Downloads (week)</span><strong id="statDownloads">0</strong></div>
+            <div class="stat"><span>Top tag</span><strong id="statTop">—</strong></div>
+          </div>
+
+          <div class="panel small" style="padding:10px">
+            <div style="font-weight:700;margin-bottom:6px">Filters help</div>
+            <div class="hint">Use tags and the search box to quickly surface high-quality notes. You can preview small files directly in the browser.</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**************************************************************************
+     * resources.html — demo UI
+     * - Mock data used if backend endpoints not present.
+     * - Backend endpoints you may implement:
+     *   GET /notes?search=&type=&tag=&page=
+     *   GET /notes/:id/download -> {url}
+     *   POST /notes -> {uploadUrl, s3Key} (create metadata + presigned upload)
+     *   POST /notes/:id/report -> flag content
+     **************************************************************************/
+
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '/api';
+
+    // ui handles
+    const resourceGrid = document.getElementById('resourceGrid');
+    const listView = document.getElementById('listView');
+    const pagination = document.getElementById('pagination');
+    const filterRow = document.getElementById('filterRow');
+    const searchInput = document.getElementById('search');
+    const clearSearch = document.getElementById('clearSearch');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const uploadMeta = document.getElementById('uploadMeta');
+    const startUpload = document.getElementById('startUpload');
+    const cancelUpload = document.getElementById('cancelUpload');
+    const uploadTitle = document.getElementById('uploadTitle');
+    const uploadTags = document.getElementById('uploadTags');
+    const uploaderHint = document.getElementById('uploaderHint');
+
+    const statNotes = document.getElementById('statNotes');
+    const statDownloads = document.getElementById('statDownloads');
+    const statTop = document.getElementById('statTop');
+
+    // layout toggles
+    document.getElementById('gridBtn').addEventListener('click', ()=> { resourceGrid.style.display='grid'; listView.style.display='none'; });
+    document.getElementById('listBtn').addEventListener('click', ()=> { resourceGrid.style.display='none'; listView.style.display='block'; });
+
+    // filters
+    filterRow.addEventListener('click', (ev)=>{
+      const chip = ev.target.closest('.chip');
+      if(!chip) return;
+      // toggle active
+      Array.from(filterRow.querySelectorAll('.chip')).forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      loadResources();
+    });
+
+    // search
+    searchInput.addEventListener('input', debounce(loadResources, 220));
+    clearSearch.addEventListener('click', ()=> { searchInput.value=''; loadResources(); });
+
+    // mock paging state
+    let page = 1;
+    const perPage = 8;
+
+    // current dataset (mock or fetched)
+    let dataset = [];
+
+    // load on start
+    loadResources();
+
+    async function loadResources(){
+      const q = searchInput.value.trim();
+      const typeChip = filterRow.querySelector('.chip.active')?.dataset?.filter || 'all';
+
+      // try backend first
+      try {
+        const resp = await fetch(`${apiBase}/notes?search=${encodeURIComponent(q)}&type=${typeChip}&page=${page}`);
+        if(!resp.ok) throw new Error('no-api');
+        const json = await resp.json();
+        dataset = json.data || [];
+        renderResources();
+        renderStats(json.meta || {});
+        return;
+      } catch (e) {
+        // fallback to mock
+        dataset = mockData().filter(d => {
+          const matchesQ = q ? (d.title.toLowerCase().includes(q.toLowerCase()) || d.uploader.toLowerCase().includes(q.toLowerCase())) : true;
+          const matchesType = (typeChip === 'all') ? true : d.type === typeChip;
+          return matchesQ && matchesType;
+        });
+        renderResources();
+        renderStats({ total: dataset.length, downloads_week: 78, top_tag: 'react' });
+      }
+    }
+
+    function renderResources(){
+      // simple pagination
+      const start = (page-1)*perPage;
+      const pageItems = dataset.slice(start, start + perPage);
+
+      resourceGrid.innerHTML = '';
+      listView.innerHTML = '';
+
+      if(pageItems.length === 0){
+        resourceGrid.innerHTML = '<div class="empty">No resources found.</div>';
+        listView.innerHTML = '<div class="empty">No resources found.</div>';
+        pagination.innerHTML = '';
+        return;
+      }
+
+      pageItems.forEach(r => {
+        // card (grid)
+        const card = document.createElement('div');
+        card.className = 'res-card';
+        card.innerHTML = `
+          <div class="res-top">
+            <div class="thumb">${r.title.split(' ').slice(0,1)[0].charAt(0).toUpperCase()}</div>
+            <div style="flex:1">
+              <div class="res-title">${escapeHtml(r.title)}</div>
+              <div class="res-meta">${escapeHtml(r.uploader)} • ${r.type} • ${r.sizeKB} KB</div>
+              <div style="margin-top:6px;color:var(--muted);font-size:13px">${escapeHtml(r.tags.join(', '))}</div>
+            </div>
+          </div>
+          <div class="res-actions">
+            <button class="res-btn" onclick="previewResource(${r.id})">Preview</button>
+            <button class="res-btn" onclick="downloadResource(${r.id})">Download</button>
+            <button class="res-btn" onclick="reportResource(${r.id})">Report</button>
+          </div>
+        `;
+        resourceGrid.appendChild(card);
+
+        // list row
+        const row = document.createElement('div');
+        row.className = 'list-row';
+        row.innerHTML = `
+          <div style="width:44px;flex-shrink:0">${r.title.charAt(0).toUpperCase()}</div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="font-weight:700">${escapeHtml(r.title)}</div>
+              <div class="muted">${r.sizeKB} KB</div>
+            </div>
+            <div class="muted small">${escapeHtml(r.uploader)} • ${r.tags.join(', ')}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="res-btn" onclick="previewResource(${r.id})">Preview</button>
+            <button class="res-btn" onclick="downloadResource(${r.id})">Download</button>
+          </div>
+        `;
+        listView.appendChild(row);
+      });
+
+      // pagination controls
+      const totalPages = Math.ceil(dataset.length / perPage) || 1;
+      pagination.innerHTML = '';
+      const prev = document.createElement('button'); prev.className='select'; prev.textContent='‹ Prev'; prev.disabled = page <= 1;
+      prev.addEventListener('click', ()=> { if(page>1) { page--; loadResources(); }});
+      const next = document.createElement('button'); next.className='select'; next.textContent='Next ›'; next.disabled = page >= totalPages;
+      next.addEventListener('click', ()=> { if(page<totalPages) { page++; loadResources(); }});
+      const pageDisplay = document.createElement('div'); pageDisplay.className='small muted'; pageDisplay.textContent = `Page ${page} / ${totalPages}`;
+      pagination.appendChild(prev);
+      pagination.appendChild(pageDisplay);
+      pagination.appendChild(next);
+    }
+
+    function renderStats(meta){
+      statNotes.textContent = meta.total || dataset.length || 0;
+      statDownloads.textContent = meta.downloads_week || 0;
+      statTop.textContent = meta.top_tag || '—';
+    }
+
+    // resource actions
+    async function downloadResource(id){
+      try {
+        const resp = await fetch(`${apiBase}/notes/${id}/download`);
+        if(!resp.ok) throw new Error('no-api');
+        const { url } = await resp.json();
+        window.open(url, '_blank');
+      } catch (e) {
+        alert('Demo: no backend detected. In production, GET /notes/:id/download should return a presigned S3 URL.');
+      }
+    }
+
+    function previewResource(id){
+      const r = dataset.find(x=>x.id===id);
+      if(!r){ alert('Not found'); return; }
+      // basic preview: show title + short description
+      alert(`${r.title}\n\nBy: ${r.uploader}\n\nTags: ${r.tags.join(', ')}\n\nDescription:\n${r.description || '(no description)'}`);
+    }
+
+    function reportResource(id){
+      if(!confirm('Report this resource for moderation?')) return;
+      // POST /notes/:id/report
+      fetch(`${apiBase}/notes/${id}/report`, {method:'POST'}).then(()=> {
+        alert('Reported. Moderators will review this item.');
+      }).catch(()=> {
+        alert('(demo) Report recorded locally. Implement POST /notes/:id/report on the server.');
+      });
+    }
+
+    // upload flow (client side)
+    uploadBtn.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      // show meta inputs
+      uploadMeta.style.display = 'block';
+      uploadTitle.value = f.name.replace(/\.[^/.]+$/, "");
+      uploadTags.value = '';
+    });
+
+    cancelUpload.addEventListener('click', ()=> {
+      fileInput.value = '';
+      uploadMeta.style.display = 'none';
+    });
+
+    startUpload.addEventListener('click', async ()=>{
+      const f = fileInput.files && fileInput.files[0];
+      if(!f) return alert('Choose a file first.');
+      const title = uploadTitle.value.trim();
+      const tags = (uploadTags.value || '').split(',').map(s=>s.trim()).filter(Boolean);
+      if(!title) return alert('Provide a title for the resource.');
+
+      // create metadata on server; expect presigned URL
+      try {
+        const resp = await fetch(`${apiBase}/notes`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ title, tags, filename: f.name, size: f.size }) });
+        if(!resp.ok) throw new Error('no-api');
+        const json = await resp.json();
+        // upload to S3 using presigned URL (PUT)
+        await fetch(json.uploadUrl, { method:'PUT', body: f });
+        alert('Upload complete. Processing may take a few seconds.');
+        fileInput.value = '';
+        uploadMeta.style.display = 'none';
+        loadResources();
+      } catch (e) {
+        // demo fallback: won't actually upload
+        alert('(demo) No backend detected. In production your server should return a presigned upload URL from POST /notes.');
+      }
+    });
+
+    // helpers & mock
+    function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function debounce(fn, wait){ let t; return (...args)=> { clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), wait); }; }
+
+    function mockData(){
+      return [
+        { id: 1, title: 'Calculus Cheatsheet', uploader:'Priya', tags:['calculus','cheatsheet'], type:'notes', sizeKB:124, downloads:12, description:'Compact formulas and common integrals.'},
+        { id: 2, title: 'DSA Patterns v2', uploader:'Aman', tags:['dsa','patterns'], type:'notes', sizeKB:980, downloads:45, description:'Patterns for solving frequent interview problems.'},
+        { id: 3, title: 'React Hooks — slides', uploader:'Kumud', tags:['react','frontend'], type:'slides', sizeKB:420, downloads:33, description:'Slides used in the live workshop.'},
+        { id: 4, title: 'Exam Strategy 101', uploader:'Sana', tags:['exam','strategy'], type:'notes', sizeKB:210, downloads:18, description:'How to prioritize topics and practice.'},
+        { id: 5, title: 'Operating Systems cheat-sheet', uploader:'Ravi', tags:['os','cheatsheet'], type:'notes', sizeKB:64, downloads:24, description:'Concise commands and concepts.'},
+        { id: 6, title: 'Project Template (zip)', uploader:'TeamAlpha', tags:['project','template'], type:'zip', sizeKB:1320, downloads:8, description:'Starter template for projects.'},
+        { id: 7, title: 'Linear Algebra — summary', uploader:'Priya', tags:['linear algebra'], type:'notes', sizeKB:110, downloads:20, description:'Key concepts and solved examples.'},
+        { id: 8, title: 'System Design — Slides', uploader:'Aman', tags:['system-design'], type:'slides', sizeKB:720, downloads:14, description:'Common patterns and trade-offs.'},
+        { id: 9, title: 'Probability quick reference', uploader:'Neha', tags:['probability'], type:'notes', sizeKB:90, downloads:17, description:'Formulas and distributions.'},
+        { id: 10, title: 'Advanced SQL Queries', uploader:'Kumud', tags:['sql','database'], type:'notes', sizeKB:280, downloads:39, description:'Window functions and optimization.'}
+      ];
+    }
+
+    // small initial stat fill
+    (function seed(){
+      const data = mockData();
+      statNotes.textContent = data.length;
+      statDownloads.textContent = data.reduce((s,i)=>s+i.downloads,0);
+      statTop.textContent = 'dsa';
+      dataset = data;
+      renderResources();
+    })();
+  </script>
+</body>
+</html>
