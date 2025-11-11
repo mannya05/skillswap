@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin • SkillSwap</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --brand:#0f172a;
+      --accent:#2563eb;
+      --danger:#ef4444;
+      --success:#10b981;
+      --radius:12px;
+      --container:1200px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background: linear-gradient(180deg,#fbfdff,var(--bg));
+      color:var(--brand);
+      padding:22px;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .wrap{ max-width:var(--container); margin:0 auto; }
+
+    header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    header h1{ margin:0; font-size:20px }
+    header p{ margin:0; color:var(--muted); font-size:13px }
+
+    .grid { display:grid; grid-template-columns: 1fr 340px; gap:14px; align-items:start; }
+    @media (max-width:980px){ .grid { grid-template-columns:1fr } }
+
+    .card {
+      background:var(--card);
+      padding:12px;
+      border-radius:12px;
+      border:1px solid rgba(15,23,42,0.04);
+      box-shadow: 0 10px 30px rgba(2,6,23,0.04);
+    }
+
+    /* top metrics */
+    .metrics { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+    .metric { flex:1; min-width:160px; padding:12px; border-radius:10px; background:linear-gradient(180deg,#fff,#fbfeff); border:1px solid rgba(15,23,42,0.03) }
+    .metric .label { color:var(--muted); font-size:13px }
+    .metric .value { font-weight:800; font-size:20px; margin-top:6px }
+
+    /* controls */
+    .controls { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .search { flex:1; }
+    input[type="text"], select { width:100%; padding:9px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); }
+    button { padding:9px 10px; border-radius:8px; border:0; cursor:pointer; font-weight:700 }
+    .btn.primary { background:var(--accent); color:white; }
+    .btn.ghost { background:transparent; border:1px solid rgba(15,23,42,0.06); color:var(--muted) }
+
+    /* table */
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { text-align:left; padding:10px; border-bottom:1px solid rgba(15,23,42,0.03) }
+    th { color:var(--muted); font-weight:800; font-size:13px }
+    tr:hover td { background: linear-gradient(180deg,#fff,#fbfdff); }
+
+    .avatar { width:40px; height:40px; border-radius:8px; background:#eef2ff; display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#0f172a }
+
+    .status { padding:6px 8px; border-radius:999px; font-weight:700; font-size:12px; background:#f1f5f9; color:var(--muted) }
+
+    .small { font-size:13px; color:var(--muted) }
+
+    /* pagination */
+    .pagination { display:flex; gap:8px; justify-content:center; padding:10px 0 }
+
+    /* sidebar sections */
+    .sidebar-section { margin-bottom:12px }
+    .log { max-height:240px; overflow:auto; padding:8px; border-radius:8px; background:#fff; border:1px solid rgba(15,23,42,0.03) }
+    .log-item { font-size:13px; padding:8px; border-bottom:1px dashed rgba(15,23,42,0.04) }
+    .log-item:last-child { border-bottom:0 }
+
+    /* modal */
+    .backdrop{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(2,6,23,0.45); z-index:60 }
+    .modal{ width:720px; max-width:95%; background:#fff; border-radius:12px; padding:16px; box-shadow:0 20px 50px rgba(2,6,23,0.3) }
+    .modal h3 { margin-top:0 }
+
+    .form-row { display:flex; gap:8px; align-items:center }
+    .form-row > * { flex:1 }
+
+    .danger { background:var(--danger); color:white }
+    .success { background:var(--success); color:white }
+
+    /* tiny helpers */
+    .muted { color:var(--muted) }
+    .right { text-align:right }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Admin Dashboard</h1>
+        <p class="muted">Moderation, user management, ledger adjustments — built for platform operators.</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="small muted">Signed in as <strong>admin@skillswap</strong></div>
+      </div>
+    </header>
+
+    <!-- quick metrics -->
+    <div class="metrics" role="region" aria-label="System metrics">
+      <div class="metric">
+        <div class="label">Weekly Active Users</div>
+        <div class="value" id="m-wau">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Sessions / day</div>
+        <div class="value" id="m-sessions">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Credits exchanged (week)</div>
+        <div class="value" id="m-credits">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Notes uploads (week)</div>
+        <div class="value" id="m-notes">—</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- main -->
+      <div class="card" style="overflow:hidden">
+        <div class="controls" aria-label="search and filters">
+          <div class="search" style="max-width:480px">
+            <input id="searchInput" type="text" placeholder="Search users, email, or skill..." />
+          </div>
+
+          <select id="filterStatus" style="width:180px;">
+            <option value="all">All users</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="pending">Pending verification</option>
+          </select>
+
+          <select id="filterRole" style="width:140px;">
+            <option value="all">All roles</option>
+            <option value="user">User</option>
+            <option value="mentor">Mentor</option>
+            <option value="admin">Admin</option>
+          </select>
+
+          <button class="btn primary" id="exportCsv">Export CSV</button>
+        </div>
+
+        <div style="overflow:auto">
+          <table aria-live="polite">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Credits</th>
+                <th>Reputation</th>
+                <th>Status</th>
+                <th class="right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody">
+              <!-- injected -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+      </div>
+
+      <!-- sidebar -->
+      <aside>
+        <div class="card sidebar-section">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:800">Quick actions</div>
+            <div class="muted small">Admin tools</div>
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:8px; flex-direction:column;">
+            <button id="openLedgerAdjust" class="btn ghost">Adjust credits (user)</button>
+            <button id="openBroadcast" class="btn ghost">Send broadcast</button>
+            <button id="openReports" class="btn ghost">Moderation queue</button>
+          </div>
+        </div>
+
+        <div class="card sidebar-section">
+          <div style="font-weight:800;margin-bottom:8px">Recent activity</div>
+          <div class="log" id="activityLog" aria-live="polite">
+            <!-- log lines -->
+          </div>
+        </div>
+
+        <div class="card sidebar-section">
+          <div style="font-weight:800;margin-bottom:8px">System health</div>
+          <div class="small muted">Queue depth: <strong id="q-depth">—</strong></div>
+          <div class="small muted">Worker errors (24h): <strong id="w-errors">—</strong></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Modal: user detail / moderation -->
+  <div id="userModal" class="backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 id="um-title">User</h3>
+        <div><button onclick="closeUserModal()" class="btn ghost">Close</button></div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:10px">
+        <div style="width:100px">
+          <div class="avatar" id="um-avatar">U</div>
+        </div>
+
+        <div style="flex:1">
+          <div id="um-name" style="font-weight:800">Name</div>
+          <div class="muted" id="um-email">email@example.com</div>
+          <div style="margin-top:8px" id="um-skills" class="small muted">skills</div>
+          <div style="margin-top:8px"><strong>Credits:</strong> <span id="um-credits">0</span> • <strong>Reputation:</strong> <span id="um-rep">0</span></div>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0" />
+
+      <div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="impersonateBtn">Impersonate</button>
+          <button class="btn" id="suspendBtn">Suspend</button>
+          <button class="btn danger" id="banBtn">Ban</button>
+        </div>
+
+        <div style="margin-top:12px">
+          <label style="font-weight:800">Moderation note (internal)</label>
+          <textarea id="um-note" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06)"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+            <button class="btn ghost" onclick="closeUserModal()">Cancel</button>
+            <button class="btn primary" id="saveNoteBtn">Save note</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: ledger adjust -->
+  <div id="ledgerModal" class="backdrop">
+    <div class="modal">
+      <h3>Adjust credits</h3>
+      <p class="muted">Make manual adjustments to a user's time-credit balance. Always add a clear reason.</p>
+      <div style="margin-top:8px">
+        <div class="form-row">
+          <input id="la-user-email" type="text" placeholder="User email (or id)" />
+          <input id="la-amount" type="number" placeholder="Amount (+/-)" />
+        </div>
+        <div style="margin-top:8px">
+          <input id="la-reason" type="text" placeholder="Reason (required)" style="width:100%" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+          <button class="btn ghost" onclick="closeLedgerModal()">Cancel</button>
+          <button class="btn primary" id="doAdjust">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*
+      admin.html client logic (vanilla)
+      - Mock data is used if server endpoints are absent.
+      - Backend endpoints recommended:
+        GET  /admin/metrics
+        GET  /admin/users?search=&status=&role=&page=
+        GET  /admin/users/:id
+        POST /admin/users/:id/notes  (moderation note)
+        POST /admin/users/:id/suspend
+        POST /admin/users/:id/ban
+        POST /admin/ledger/adjust  {user_email, amount, reason}
+        GET  /admin/activity?limit=50
+        GET  /admin/reports (moderation queue)
+        POST /admin/broadcast {message}
+      - CSV export: GET /admin/users?export=csv or client-side conversion from fetched JSON.
+    */
+
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '/api';
+    const usersTbody = document.getElementById('usersTbody');
+    const paginationEl = document.getElementById('pagination');
+    const searchInput = document.getElementById('searchInput');
+    const filterStatus = document.getElementById('filterStatus');
+    const filterRole = document.getElementById('filterRole');
+    const exportCsvBtn = document.getElementById('exportCsv');
+
+    // modals
+    const userModal = document.getElementById('userModal');
+    const ledgerModal = document.getElementById('ledgerModal');
+    // user modal elements
+    const umTitle = document.getElementById('um-title');
+    const umAvatar = document.getElementById('um-avatar');
+    const umName = document.getElementById('um-name');
+    const umEmail = document.getElementById('um-email');
+    const umSkills = document.getElementById('um-skills');
+    const umCredits = document.getElementById('um-credits');
+    const umRep = document.getElementById('um-rep');
+    const umNote = document.getElementById('um-note');
+    const impersonateBtn = document.getElementById('impersonateBtn');
+    const suspendBtn = document.getElementById('suspendBtn');
+    const banBtn = document.getElementById('banBtn');
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+
+    // ledger fields
+    const laUserEmail = document.getElementById('la-user-email');
+    const laAmount = document.getElementById('la-amount');
+    const laReason = document.getElementById('la-reason');
+    const doAdjustBtn = document.getElementById('doAdjust');
+
+    // activity
+    const activityLog = document.getElementById('activityLog');
+
+    // paging state
+    let page = 1, perPage = 12;
+    let users = []; // local cache
+    let activeUser = null;
+
+    // boot
+    (function init(){
+      loadMetrics();
+      loadUsers();
+      loadActivity();
+      wireUI();
+    })();
+
+    function wireUI(){
+      searchInput.addEventListener('input', debounce(()=> { page=1; loadUsers(); }, 250));
+      filterStatus.addEventListener('change', ()=> { page=1; loadUsers(); });
+      filterRole.addEventListener('change', ()=> { page=1; loadUsers(); });
+      exportCsvBtn.addEventListener('click', exportCsv);
+
+      document.getElementById('openLedgerAdjust').addEventListener('click', ()=> openLedgerModal());
+      document.getElementById('openBroadcast').addEventListener('click', ()=> alert('Broadcast modal not implemented in demo.'));
+      document.getElementById('openReports').addEventListener('click', ()=> alert('Moderation queue placeholder (implement GET /admin/reports).'));
+      document.getElementById('openLedgerAdjust').addEventListener('click', ()=> openLedgerModal());
+
+      document.getElementById('closeUserModal')?.addEventListener('click', closeUserModal);
+      doAdjustBtn.addEventListener('click', submitLedgerAdjust);
+      document.getElementById('doAdjust')?.addEventListener('click', submitLedgerAdjust);
+    }
+
+    // load system metrics (GET /admin/metrics)
+    async function loadMetrics(){
+      try {
+        const res = await fetch(apiBase + '/admin/metrics');
+        if(!res.ok) throw new Error('no-api');
+        const json = await res.json();
+        document.getElementById('m-wau').textContent = json.wau;
+        document.getElementById('m-sessions').textContent = json.sessionsPerDay;
+        document.getElementById('m-credits').textContent = json.creditsWeek;
+        document.getElementById('m-notes').textContent = json.notesWeek;
+      } catch(e){
+        // fallback demo values
+        document.getElementById('m-wau').textContent = 1243;
+        document.getElementById('m-sessions').textContent = 42;
+        document.getElementById('m-credits').textContent = 890;
+        document.getElementById('m-notes').textContent = 72;
+      }
+    }
+
+    // load users with filters
+    async function loadUsers(){
+      const q = encodeURIComponent(searchInput.value.trim());
+      const status = filterStatus.value;
+      const role = filterRole.value;
+      try {
+        const res = await fetch(`${apiBase}/admin/users?search=${q}&status=${status}&role=${role}&page=${page}`);
+        if(!res.ok) throw new Error('no-api');
+        const json = await res.json();
+        users = json.data || [];
+        renderUsers(json.meta || { total: users.length });
+      } catch(e){
+        // fallback mock
+        users = mockUsers();
+        // apply simple client-side filters
+        users = users.filter(u => {
+          const matchesQ = !searchInput.value || (u.name.toLowerCase().includes(searchInput.value.toLowerCase()) || u.email.toLowerCase().includes(searchInput.value.toLowerCase()) || (u.skills||[]).join(' ').toLowerCase().includes(searchInput.value.toLowerCase()));
+          const matchesStatus = filterStatus.value === 'all' ? true : u.status === filterStatus.value;
+          const matchesRole = filterRole.value === 'all' ? true : u.role === filterRole.value;
+          return matchesQ && matchesStatus && matchesRole;
+        });
+        renderUsers({ total: users.length });
+      }
+    }
+
+    function renderUsers(meta = { total: users.length }){
+      usersTbody.innerHTML = '';
+      const start = (page-1)*perPage;
+      const pageItems = users.slice(start, start + perPage);
+      pageItems.forEach((u, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${start + i + 1}</td>
+          <td><div style="display:flex;gap:8px;align-items:center"><div class="avatar">${u.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</div><div><div style="font-weight:800">${escapeHtml(u.name)}</div><div class="small muted">${u.location || ''}</div></div></div></td>
+          <td>${escapeHtml(u.email)}</td>
+          <td>${escapeHtml(u.role)}</td>
+          <td>${u.credits}</td>
+          <td>${u.reputation.toFixed(2)}</td>
+          <td><span class="status">${u.status}</span></td>
+          <td class="right">
+            <button class="btn ghost" onclick="openUser(${u.id})">View</button>
+            <button class="btn" onclick="quickAdjust(${u.id}, 10)">+10</button>
+            <button class="btn" onclick="quickAdjust(${u.id}, -10)">-10</button>
+          </td>
+        `;
+        usersTbody.appendChild(tr);
+      });
+
+      // pagination
+      const total = meta.total || users.length;
+      const totalPages = Math.max(1, Math.ceil(total / perPage));
+      paginationEl.innerHTML = '';
+      const prev = document.createElement('button'); prev.className='btn ghost'; prev.textContent='‹ Prev'; prev.disabled = page <= 1; prev.addEventListener('click', ()=>{ page--; loadUsers(); });
+      const next = document.createElement('button'); next.className='btn ghost'; next.textContent='Next ›'; next.disabled = page >= totalPages; next.addEventListener('click', ()=>{ page++; loadUsers(); });
+      const info = document.createElement('div'); info.className='small muted'; info.textContent = `Page ${page} / ${totalPages} • ${total} users`;
+      paginationEl.appendChild(prev); paginationEl.appendChild(info); paginationEl.appendChild(next);
+    }
+
+    // open user detail modal
+    async function openUser(id){
+      // find locally
+      const local = users.find(u => u.id === id);
+      try {
+        const res = await fetch(`${apiBase}/admin/users/${id}`);
+        if(!res.ok) throw new Error('no-api');
+        const json = await res.json();
+        activeUser = json;
+      } catch(e){
+        activeUser = local || mockUsers().find(x=>x.id===id) || localFallbackUser(id);
+      }
+      populateUserModal(activeUser);
+      userModal.style.display = 'flex';
+    }
+
+    function populateUserModal(u){
+      umTitle.textContent = `User — ${u.name}`;
+      umAvatar.textContent = u.name.split(' ').map(n=>n[0]).slice(0,2).join('');
+      umName.textContent = u.name;
+      umEmail.textContent = u.email;
+      umSkills.textContent = (u.skills || []).slice(0,6).join(', ');
+      umCredits.textContent = u.credits;
+      umRep.textContent = u.reputation.toFixed(2);
+      umNote.value = '';
+      // wire actions
+      impersonateBtn.onclick = ()=> impersonateUser(u.id);
+      suspendBtn.onclick = ()=> moderateUser(u.id, 'suspend');
+      banBtn.onclick = ()=> moderateUser(u.id, 'ban');
+      saveNoteBtn.onclick = ()=> saveModerationNote(u.id);
+    }
+
+    function closeUserModal(){ userModal.style.display = 'none'; activeUser = null; }
+
+    // moderation actions
+    async function moderateUser(id, action){
+      if(!confirm(`Confirm ${action} user ${id}?`)) return;
+      try {
+        const res = await fetch(`${apiBase}/admin/users/${id}/${action}`, { method:'POST' });
+        if(!res.ok) throw new Error('no-api');
+        alert(`${action} succeeded.`);
+        loadUsers();
+        closeUserModal();
+      } catch(e){
+        alert(`(demo) ${action} simulated locally. Implement POST /admin/users/:id/${action} on server.`);
+      }
+    }
+
+    function impersonateUser(id){
+      if(!confirm('Impersonate this user? You will be logged in as them.')) return;
+      // real implementation: generate a short-lived impersonation token server-side and redirect to frontend with token
+      alert('(demo) Impersonation simulated. Implement server-side impersonation token flow.');
+    }
+
+    async function saveModerationNote(id){
+      const text = umNote.value.trim();
+      if(!text) return alert('Enter a note first.');
+      try {
+        const res = await fetch(`${apiBase}/admin/users/${id}/notes`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ note: text })});
+        if(!res.ok) throw new Error('no-api');
+        alert('Note saved.');
+      } catch(e){
+        alert('(demo) Moderation note saved locally.');
+      }
+    }
+
+    // quick adjust (client-side demo)
+    function quickAdjust(id, delta){
+      if(!confirm(`Apply ${delta>0?'+':''}${delta} credits to user ${id}?`)) return;
+      // in production: POST /admin/ledger/adjust
+      const user = (users.find(u=>u.id===id) || mockUsers().find(u=>u.id===id));
+      if(user) user.credits = (user.credits || 0) + delta;
+      alert(`Applied ${delta>0?'+':''}${delta} credits to ${user ? user.name : id} (demo).`);
+      renderUsers({ total: users.length });
+    }
+
+    // ledger modal
+    function openLedgerModal(){
+      ledgerModal.style.display = 'flex';
+      laUserEmail.value = '';
+      laAmount.value = '';
+      laReason.value = '';
+    }
+    function closeLedgerModal(){ ledgerModal.style.display = 'none'; }
+    async function submitLedgerAdjust(){
+      const email = laUserEmail.value.trim();
+      const amount = Number(laAmount.value);
+      const reason = laReason.value.trim();
+      if(!email || !reason || !amount) return alert('User email, amount and reason required.');
+      try {
+        const res = await fetch(`${apiBase}/admin/ledger/adjust`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_email: email, amount, reason })});
+        if(!res.ok) throw new Error('no-api');
+        alert('Adjustment applied.');
+        closeLedgerModal();
+        loadUsers();
+        loadActivity();
+      } catch(e){
+        alert('(demo) Ledger adjustment simulated locally. Implement POST /admin/ledger/adjust.');
+        closeLedgerModal();
+      }
+    }
+
+    // activity
+    async function loadActivity(){
+      try {
+        const res = await fetch(`${apiBase}/admin/activity?limit=50`);
+        if(!res.ok) throw new Error('no-api');
+        const json = await res.json();
+        renderActivity(json.data || []);
+      } catch(e){
+        renderActivity(mockActivity());
+      }
+    }
+    function renderActivity(items){
+      activityLog.innerHTML = '';
+      items.slice(0,50).forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.innerHTML = `<div style="font-weight:700">${escapeHtml(it.action)}</div><div class="muted small">${escapeHtml(it.detail)} • ${new Date(it.time).toLocaleString()}</div>`;
+        activityLog.appendChild(div);
+      });
+      document.getElementById('q-depth').textContent = Math.floor(Math.random()*12);
+      document.getElementById('w-errors').textContent = Math.floor(Math.random()*4);
+    }
+
+    // CSV export - client-side from current users cache
+    function exportCsv(){
+      const arr = users;
+      if(!arr || arr.length === 0) return alert('No users to export.');
+      const cols = ['id','name','email','role','status','credits','reputation'];
+      const rows = [cols.join(',')];
+      arr.forEach(u => rows.push(cols.map(c => `"${String(u[c]||'').replace(/"/g,'""')}"`).join(',')));
+      const blob = new Blob([rows.join('\n')], { type:'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'users_export.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // small helpers
+    function escapeHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function debounce(fn, wait){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), wait); }; }
+
+    // mock data for demo
+    function mockUsers(){
+      return [
+        { id: 11, name:'Priya Singh', email:'priya@example.com', role:'mentor', status:'active', credits:120, reputation:4.9, skills:['calculus','linear algebra'], location:'Delhi' },
+        { id: 12, name:'Aman Verma', email:'aman@example.com', role:'mentor', status:'active', credits:80, reputation:4.7, skills:['dsa','system-design'], location:'Mumbai' },
+        { id: 13, name:'Sana Khan', email:'sana@example.com', role:'user', status:'pending', credits:10, reputation:3.9, skills:['exam-strategy'], location:'Kolkata' },
+        { id: 14, name:'Ravi Patel', email:'ravi@example.com', role:'user', status:'suspended', credits:0, reputation:2.2, skills:['os','sql'], location:'Bengaluru' },
+        { id: 15, name:'Kumud Kumud', email:'kumud@example.com', role:'mentor', status:'active', credits:40, reputation:4.8, skills:['react','frontend'], location:'Bengaluru' },
+        { id: 16, name:'Neha Gupta', email:'neha@example.com', role:'user', status:'active', credits:22, reputation:4.1, skills:['probability'], location:'Chennai' },
+        { id: 17, name:'Ritik Sharma', email:'ritik@example.com', role:'user', status:'active', credits:5, reputation:3.6, skills:['sql','dsa'], location:'Jaipur' },
+        { id: 18, name:'TeamAlpha', email:'teamalpha@example.com', role:'mentor', status:'active', credits:250, reputation:4.5, skills:['project'], location:'Remote' }
+      ];
+    }
+    function localFallbackUser(id){
+      return { id, name:'User ' + id, email:'user'+id+'@example.com', role:'user', status:'active', credits:0, reputation:0, skills:[] };
+    }
+    function mockActivity(){
+      return [
+        { action:'Uploaded note', detail:'Aman uploaded "DSA Patterns v2"', time: new Date().toISOString() },
+        { action:'Session completed', detail:'Priya completed Linear Algebra session (5 credits)', time: new Date(Date.now()-1000*60*60).toISOString() },
+        { action:'Ledger adjustment', detail:'Admin +10 credits to Kumud', time: new Date(Date.now()-1000*60*60*3).toISOString() }
+      ];
+    }
+
+    // small keyboard: escape to close modals
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Escape'){ userModal.style.display='none'; ledgerModal.style.display='none'; }
+    });
+
+    // expose a few functions for demo buttons
+    window.openUser = openUser;
+    window.closeUserModal = closeUserModal;
+    window.openLedgerModal = openLedgerModal;
+    window.closeLedgerModal = closeLedgerModal;
+    window.quickAdjust = quickAdjust;
+  </script>
+</body>
+</html>
