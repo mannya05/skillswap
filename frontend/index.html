@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSwap+ | Learn & Share Skills</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        header {
+            background-color: #2d89ef;
+            color: white;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+        }
+
+        .hero h2 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .hero p {
+            color: #555;
+            max-width: 600px;
+            margin: 0 auto 25px;
+            line-height: 1.6;
+        }
+
+        .hero button {
+            background-color: #2d89ef;
+            border: none;
+            padding: 12px 25px;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .hero button:hover {
+            background-color: #1e63b3;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 50px;
+        }
+
+        .feature {
+            background-color: white;
+            border-radius: 6px;
+            padding: 20px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        .feature h3 {
+            color: #2d89ef;
+            margin-bottom: 10px;
+        }
+
+        .feature p {
+            color: #555;
+            line-height: 1.4;
+        }
+
+        footer {
+            text-align: center;
+            background-color: #2d89ef;
+            color: white;
+            padding: 15px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            nav a {
+                margin: 5px 0;
+                display: inline-block;
+            }
+
+            .hero h2 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SkillSwap+</h1>
+        <nav>
+            <a href="#">Home</a>
+            <a href="#">Mentors</a>
+            <a href="#">About</a>
+            <a href="#">Login</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h2>Learn. Teach. Grow Together.</h2>
+        <p>SkillSwap+ connects students and mentors so you can share knowledge, gain new skills, and grow your network — all in one place.</p>
+        <button>Get Started</button>
+    </section>
+
+    <section class="features">
+        <div class="feature">
+            <h3>Find Mentors</h3>
+            <p>Explore a wide range of mentors based on skills and experience to guide your learning journey.</p>
+        </div>
+        <div class="feature">
+            <h3>Share Your Skills</h3>
+            <p>Become a mentor and teach what you love. Help others grow while improving your own expertise.</p>
+        </div>
+        <div class="feature">
+            <h3>Collaborate & Connect</h3>
+            <p>Join a supportive community where learning is mutual and everyone grows together.</p>
+        </div>
+    </section>
+
+    <footer>
+        &copy; 2025 SkillSwap+. All Rights Reserved.
+    </footer>
+
+</body>
+</html>
+

@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reviews — SkillSwap</title>
+  <style>
+    :root{
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --danger: #ef4444;
+      --radius: 12px;
+      --max-width: 1100px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      -webkit-font-smoothing:antialiased;
+      background: linear-gradient(180deg,#fbfdff,var(--bg));
+      color:#0f172a;
+      padding:24px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .wrap{ width:100%; max-width:var(--max-width); }
+
+    header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px; }
+    header h1 { margin:0; font-size:20px; }
+    header p { margin:2px 0 0; color:var(--muted); font-size:13px; }
+
+    .panel {
+      background:var(--card);
+      border-radius:14px;
+      padding:14px;
+      border:1px solid rgba(15,23,42,0.04);
+      box-shadow: 0 10px 30px rgba(2,6,23,0.04);
+    }
+
+    .toolbar { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .search { flex:1; min-width:220px; display:flex; gap:8px; align-items:center; }
+    .search input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); }
+
+    .filters { display:flex; gap:8px; align-items:center; }
+    .select, .btn { padding:9px 12px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:white; cursor:pointer; font-weight:600 }
+    .btn.primary { background:var(--accent); color:white; border:0; box-shadow: 0 8px 20px rgba(37,99,235,0.12) }
+
+    .grid { display:grid; grid-template-columns: 1fr 360px; gap:12px; }
+    @media (max-width:980px){ .grid { grid-template-columns: 1fr } }
+
+    /* list/table */
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    thead th { text-align:left; padding:10px; font-weight:700; color:var(--muted); font-size:13px; border-bottom:1px solid rgba(15,23,42,0.06) }
+    tbody td { padding:12px 10px; border-bottom:1px solid rgba(15,23,42,0.03); vertical-align:middle }
+    .star { color:#f59e0b; font-size:14px; margin-right:6px }
+    .small { font-size:13px; color:var(--muted) }
+    .muted { color:var(--muted) }
+
+    /* review card (sidebar) */
+    .stats { padding:12px; border-radius:10px; border:1px solid rgba(15,23,42,0.03); background:linear-gradient(180deg,#fff,#fbffff) }
+    .stat-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed rgba(15,23,42,0.03) }
+    .stat-row:last-child { border-bottom:0; }
+
+    /* review detail modal */
+    .modal-backdrop { position:fixed; inset:0; background:rgba(2,6,23,0.45); display:none; align-items:center; justify-content:center; z-index:60 }
+    .modal { width:720px; max-width:95%; background:#fff; border-radius:12px; padding:16px; box-shadow:0 20px 50px rgba(2,6,23,0.3) }
+    .modal h3 { margin:0 0 8px 0 }
+    .modal .meta { color:var(--muted); font-size:13px; margin-bottom:10px }
+    .modal .reply { margin-top:12px; display:flex; gap:8px }
+    .modal input[type="text"] { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06) }
+
+    .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:10px }
+
+    /* small helpers */
+    .tag { padding:6px 8px; border-radius:999px; background:#f1f5f9; color:var(--muted); font-weight:700; font-size:12px }
+    .bad { color:var(--danger); font-weight:700 }
+    .export { background:linear-gradient(90deg,#f8fafc,#fff); padding:8px; border-radius:8px; border:1px solid rgba(15,23,42,0.03) }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Reviews</h1>
+        <p class="muted">Community feedback — view, reply, and moderate reviews for sessions and notes.</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="small muted">Signed in as <strong>Kumud</strong></div>
+      </div>
+    </header>
+
+    <div class="panel">
+      <div class="toolbar" role="region" aria-label="controls">
+        <div class="search">
+          <input id="q" placeholder="Search by reviewer, text, or skill..." />
+          <button id="clear" class="select">Clear</button>
+        </div>
+
+        <div class="filters">
+          <select id="ratingFilter" class="select" aria-label="Filter by rating">
+            <option value="all">All ratings</option>
+            <option value="5">5 stars</option>
+            <option value="4">4 stars</option>
+            <option value="3">3 stars</option>
+            <option value="2">2 stars</option>
+            <option value="1">1 star</option>
+          </select>
+
+          <select id="typeFilter" class="select" aria-label="Filter by review type">
+            <option value="all">All types</option>
+            <option value="session">Session</option>
+            <option value="note">Note</option>
+          </select>
+
+          <button id="sortBtn" class="select" title="Sort">Sort: Newest</button>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="export small muted" id="exportCsv" title="Export visible reviews as CSV">Export CSV</div>
+          <button id="refresh" class="btn">Refresh</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <table aria-live="polite">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th>Reviewer</th>
+                <th>Target</th>
+                <th>Rating</th>
+                <th>Comment</th>
+                <th style="width:150px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <!-- rows inserted by JS -->
+            </tbody>
+          </table>
+
+          <div style="margin-top:12px;display:flex;justify-content:center;gap:8px">
+            <button id="prev" class="select">‹ Prev</button>
+            <div id="pageInfo" class="muted small">Page 1</div>
+            <button id="next" class="select">Next ›</button>
+          </div>
+        </div>
+
+        <aside>
+          <div class="stats">
+            <div style="font-weight:800;margin-bottom:8px">Summary</div>
+            <div class="stat-row"><div>Average rating</div><div id="avgRating" style="font-weight:800">—</div></div>
+            <div class="stat-row"><div>Total reviews</div><div id="totalReviews">—</div></div>
+            <div class="stat-row"><div>5★</div><div id="count5">—</div></div>
+            <div class="stat-row"><div>4★</div><div id="count4">—</div></div>
+            <div class="stat-row"><div>3★</div><div id="count3">—</div></div>
+            <div class="stat-row"><div>2★</div><div id="count2">—</div></div>
+            <div class="stat-row"><div>1★</div><div id="count1">—</div></div>
+            <div style="margin-top:12px" class="small muted">Tip: use Export CSV to pull recent reviews for offline moderation.</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal for reply / moderation -->
+  <div id="modal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal" role="document">
+      <h3 id="modalTitle">Review</h3>
+      <div class="meta" id="modalMeta">by reviewer • target</div>
+      <div id="modalComment" style="white-space:pre-wrap"></div>
+
+      <div style="margin-top:12px">
+        <strong>Admin actions</strong>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <label class="small muted">Mark as:</label>
+          <select id="moderation" class="select">
+            <option value="none">No action</option>
+            <option value="hide">Hide review</option>
+            <option value="flag">Flag for follow-up</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="reply">
+        <input id="replyText" type="text" placeholder="Write a public reply (visible to reviewer)" />
+        <button id="sendReply" class="btn primary">Reply</button>
+      </div>
+
+      <div class="actions">
+        <button onclick="closeModal()" class="select">Close</button>
+        <button id="deleteReview" class="select bad">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*************************************************************************
+     * reviews.html — client script (vanilla)
+     * - Mock data fallback if backend not present
+     * - Endpoints to implement:
+     *   GET /reviews?search=&rating=&type=&page=
+     *   POST /reviews/:id/reply { text }
+     *   POST /reviews/:id/moderate { action }
+     *   DELETE /reviews/:id
+     *************************************************************************/
+
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '/api';
+    const tbody = document.getElementById('tbody');
+    const q = document.getElementById('q');
+    const clear = document.getElementById('clear');
+    const ratingFilter = document.getElementById('ratingFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    const sortBtn = document.getElementById('sortBtn');
+    const refresh = document.getElementById('refresh');
+    const prev = document.getElementById('prev');
+    const next = document.getElementById('next');
+    const pageInfo = document.getElementById('pageInfo');
+
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMeta = document.getElementById('modalMeta');
+    const modalComment = document.getElementById('modalComment');
+    const replyText = document.getElementById('replyText');
+    const sendReply = document.getElementById('sendReply');
+    const moderation = document.getElementById('moderation');
+    const deleteReviewBtn = document.getElementById('deleteReview');
+
+    const exportCsv = document.getElementById('exportCsv');
+
+    let reviews = [];
+    let page = 1;
+    const perPage = 8;
+    let sortNewest = true;
+    let activeReview = null;
+
+    // event bindings
+    q.addEventListener('input', debounce(()=> { page = 1; load(); }, 200));
+    clear.addEventListener('click', ()=> { q.value=''; page=1; load(); });
+    ratingFilter.addEventListener('change', ()=> { page=1; load(); });
+    typeFilter.addEventListener('change', ()=> { page=1; load(); });
+    sortBtn.addEventListener('click', ()=> { sortNewest = !sortNewest; sortBtn.textContent = sortNewest ? 'Sort: Newest' : 'Sort: Top rated'; load(); });
+    refresh.addEventListener('click', load);
+    prev.addEventListener('click', ()=> { if(page>1) { page--; load(); }});
+    next.addEventListener('click', ()=> { page++; load(); });
+
+    sendReply.addEventListener('click', async ()=> {
+      if(!activeReview) return;
+      const text = replyText.value.trim();
+      if(!text) return alert('Write a reply first.');
+      try {
+        const res = await fetch(`${apiBase}/reviews/${activeReview.id}/reply`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text})});
+        if(!res.ok) throw new Error('no-api');
+        alert('Reply posted.');
+      } catch (e) {
+        alert('(demo) Reply recorded locally. Implement POST /reviews/:id/reply on server.');
+      }
+      // optimistic local update
+      activeReview.reply = text;
+      renderRowFor(activeReview);
+      replyText.value = '';
+      closeModal();
+    });
+
+    deleteReviewBtn.addEventListener('click', async ()=> {
+      if(!activeReview) return;
+      if(!confirm('Delete this review? This action cannot be undone.')) return;
+      try {
+        const res = await fetch(`${apiBase}/reviews/${activeReview.id}`, { method:'DELETE' });
+        if(!res.ok) throw new Error('no-api');
+        alert('Deleted.');
+      } catch (e) {
+        alert('(demo) Review removed locally. Implement DELETE /reviews/:id on server.');
+      }
+      // local removal
+      reviews = reviews.filter(r=>r.id !== activeReview.id);
+      closeModal();
+      renderTable();
+    });
+
+    exportCsv.addEventListener('click', ()=> {
+      const visible = getVisibleReviews();
+      if(visible.length === 0) return alert('No reviews to export.');
+      const csv = toCsv(visible);
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'reviews_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // initial load
+    load();
+
+    async function load(){
+      const search = q.value.trim();
+      const rating = ratingFilter.value;
+      const type = typeFilter.value;
+      // attempt backend
+      try {
+        const resp = await fetch(`${apiBase}/reviews?search=${encodeURIComponent(search)}&rating=${rating}&type=${type}&page=${page}`);
+        if(!resp.ok) throw new Error('no-api');
+        const json = await resp.json();
+        reviews = json.data || [];
+      } catch (e) {
+        // fallback mock
+        reviews = mockReviews().filter(r => {
+          const matchesQ = !search || (r.reviewer.toLowerCase().includes(search.toLowerCase()) || r.comment.toLowerCase().includes(search.toLowerCase()) || r.target.toLowerCase().includes(search.toLowerCase()));
+          const matchesRating = rating === 'all' ? true : String(r.rating) === rating;
+          const matchesType = type === 'all' ? true : r.type === type;
+          return matchesQ && matchesRating && matchesType;
+        });
+      }
+
+      // sort
+      if(sortNewest) reviews.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+      else reviews.sort((a,b)=> b.rating - a.rating || (new Date(b.created_at) - new Date(a.created_at)));
+
+      renderTable();
+      renderStats();
+    }
+
+    function renderTable(){
+      const start = (page-1)*perPage;
+      const items = reviews.slice(start, start + perPage);
+      tbody.innerHTML = '';
+      if(items.length === 0){
+        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:24px;text-align:center">No reviews found.</td></tr>';
+      } else {
+        items.forEach((r, idx) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${start + idx + 1}</td>
+            <td>
+              <div style="font-weight:700">${escape(r.reviewer)}</div>
+              <div class="small muted">${escape(r.reviewer_email || '')}</div>
+            </td>
+            <td>${escape(r.target)} <div class="small muted">${r.type}</div></td>
+            <td>${renderStars(r.rating)}</td>
+            <td><div style="max-width:420px">${escape(r.comment)}</div>
+                ${r.reply ? `<div style="margin-top:6px;padding:8px;background:#f8fafc;border-radius:8px;border:1px solid rgba(15,23,42,0.03)"><strong>Reply:</strong> ${escape(r.reply)}</div>` : '' }
+            </td>
+            <td>
+              <div style="display:flex;gap:6px">
+                <button class="select" onclick="openModal(${r.id})">View</button>
+                <button class="select" onclick="markHelpful(${r.id})">Helpful</button>
+                <button class="select" onclick="report(${r.id})">Report</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      pageInfo.textContent = `Page ${page} • Showing ${Math.min(reviews.length, (page)*perPage)} of ${reviews.length}`;
+    }
+
+    function renderRowFor(review){
+      // easy approach: re-render whole table
+      renderTable();
+    }
+
+    function renderStats(){
+      const total = reviews.length;
+      const avg = (reviews.reduce((s,r)=>s+r.rating,0) / (total || 1)).toFixed(2);
+      document.getElementById('avgRating').textContent = avg;
+      document.getElementById('totalReviews').textContent = total;
+      for(let i=1;i<=5;i++){
+        document.getElementById('count' + i).textContent = reviews.filter(r=>r.rating === i).length;
+      }
+    }
+
+    function openModal(id){
+      const r = (reviews.find(x=>x.id===id));
+      if(!r) return;
+      activeReview = r;
+      modalTitle.textContent = `${r.reviewer} — ${r.rating}★`;
+      modalMeta.textContent = `${r.target} • ${r.type} • ${new Date(r.created_at).toLocaleString()}`;
+      modalComment.textContent = r.comment;
+      replyText.value = r.reply || '';
+      moderation.value = 'none';
+      modal.style.display = 'flex';
+    }
+
+    function closeModal(){ modal.style.display = 'none'; activeReview = null; }
+
+    async function markHelpful(id){
+      try {
+        const res = await fetch(`${apiBase}/reviews/${id}/helpful`, { method:'POST' });
+        if(!res.ok) throw new Error('no-api');
+        alert('Marked helpful.');
+      } catch(e){
+        alert('(demo) Marked helpful locally.');
+      }
+    }
+
+    async function report(id){
+      if(!confirm('Report this review for moderation?')) return;
+      try {
+        const res = await fetch(`${apiBase}/reviews/${id}/report`, { method:'POST' });
+        if(!res.ok) throw new Error('no-api');
+        alert('Reported. Moderators will review this review.');
+      } catch(e){
+        alert('(demo) Report noted locally.');
+      }
+    }
+
+    // helpers
+    function renderStars(n){
+      let out = '';
+      for(let i=0;i<5;i++) out += `<span class="star">${i < n ? '★' : '☆'}</span>`;
+      return out;
+    }
+
+    function escape(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn.apply(this,a), wait); }; }
+
+    // CSV export helper
+    function getVisibleReviews(){
+      const start = (page-1)*perPage;
+      return reviews.slice(start, start + perPage);
+    }
+    function toCsv(arr){
+      const cols = ['id','reviewer','reviewer_email','target','type','rating','comment','reply','created_at'];
+      const lines = [cols.join(',')];
+      arr.forEach(r=>{
+        lines.push(cols.map(c => `"${String(r[c] || '').replace(/"/g,'""')}"`).join(','));
+      });
+      return lines.join('\n');
+    }
+
+    // modal close on backdrop click or Esc
+    document.getElementById('modal').addEventListener('click', e=> { if(e.target === document.getElementById('modal')) closeModal(); });
+    document.addEventListener('keydown', e=> { if(e.key === 'Escape') closeModal(); });
+
+    // MOCK data
+    function mockReviews(){
+      return [
+        { id: 1, reviewer: 'Priya', reviewer_email: 'priya@example.com', target:'Linear Algebra — 1:1', type:'session', rating:5, comment:'Excellent explanation and solved my doubts quickly. Highly recommended.', created_at:'2025-11-09T18:12:00Z', reply:'Thanks Priya! Glad it helped.' },
+        { id: 2, reviewer: 'Ravi', reviewer_email: 'ravi@example.com', target:'DSA Patterns v2', type:'note', rating:4, comment:'Good content but would like more explanations for the templates.', created_at:'2025-11-08T09:20:00Z' },
+        { id: 3, reviewer: 'Neha', reviewer_email: 'neha@example.com', target:'Exam Strategy 101', type:'session', rating:3, comment:'Useful, but pacing was a bit fast for me.', created_at:'2025-11-07T14:02:00Z' },
+        { id: 4, reviewer: 'Aman', reviewer_email: 'aman@example.com', target:'React Hooks', type:'session', rating:5, comment:'Clear, practical examples and follow-up notes provided.', created_at:'2025-11-06T20:30:00Z', reply:'Appreciate the feedback!' },
+        { id: 5, reviewer: 'Sana', reviewer_email: 'sana@example.com', target:'Operating Systems cheat-sheet', type:'note', rating:2, comment:'Too short and missing crucial diagrams.', created_at:'2025-11-05T11:50:00Z' },
+        { id: 6, reviewer: 'Karan', reviewer_email: 'karan@example.com', target:'Linear Algebra — 1:1', type:'session', rating:4, comment:'Good session overall; would like more practice problems.', created_at:'2025-11-04T16:20:00Z' },
+        { id: 7, reviewer: 'Neel', reviewer_email: 'neel@example.com', target:'Advanced SQL Queries', type:'note', rating:5, comment:'Great advanced tips. Helped optimize a query I had.', created_at:'2025-11-02T10:05:00Z' },
+        { id: 8, reviewer: 'Ritika', reviewer_email: 'ritika@example.com', target:'Probability quick reference', type:'note', rating:4, comment:'Handy reference, nicely formatted.', created_at:'2025-11-01T08:22:00Z' },
+        { id: 9, reviewer: 'Mukul', reviewer_email: 'mukul@example.com', target:'DSA Patterns v2', type:'note', rating:1, comment:'Found many mistakes and missing code samples.', created_at:'2025-10-30T12:01:00Z' },
+        { id: 10, reviewer: 'Anita', reviewer_email: 'anita@example.com', target:'Project Template (zip)', type:'note', rating:5, comment:'Saved me hours of setup. Highly recommended for new projects.', created_at:'2025-10-28T18:33:00Z' }
+      ];
+    }
+  </script>
+</body>
+</html>

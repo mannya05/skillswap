@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SkillSwap+ — Register</title>
+  <style>
+    /* simple, human-looking styles */
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f4f6;
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+
+    .wrap {
+      max-width: 520px;
+      margin: 48px auto;
+      background: white;
+      padding: 22px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(30,30,40,0.06);
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 8px;
+    }
+
+    p.lead {
+      color: #666;
+      margin: 0 0 18px;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-sizing: border-box;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .roles {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+
+    .role {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #666;
+    }
+
+    button {
+      background: #2d89ef;
+      color: white;
+      border: 0;
+      padding: 10px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .footer-cta {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    .error {
+      color: #b00020;
+      font-size: 13px;
+      margin: -8px 0 12px;
+    }
+
+    /* small screens */
+    @media (max-width:480px){
+      .wrap{margin:20px;}
+      .roles{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrap">
+    <h1>Create your SkillSwap+ account</h1>
+    <p class="lead">Choose whether you want to learn, teach, or both. We'll tailor your experience.</p>
+
+    <form id="registerForm" novalidate>
+      <label for="name">Full name</label>
+      <input id="name" name="name" type="text" placeholder="e.g., Priya Sharma" required />
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" placeholder="you@example.com" required />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" placeholder="choose a secure password" required minlength="6" />
+
+      <label>Role</label>
+      <div class="roles" role="radiogroup" aria-labelledby="roleLabel">
+        <label class="role"><input type="radio" name="role" value="student" checked /> Student</label>
+        <label class="role"><input type="radio" name="role" value="mentor" /> Mentor</label>
+        <label class="role"><input type="radio" name="role" value="both" /> Both</label>
+      </div>
+
+      <label for="skills">Primary skill / interest (comma separated)</label>
+      <input id="skills" name="skills" type="text" placeholder="e.g., React, Linear Algebra, Guitar" />
+
+      <div class="error" id="error" style="display:none;"></div>
+
+      <button id="submitBtn" type="submit">Create account</button>
+
+      <div class="footer-cta">
+        <small class="small">By continuing you agree to our <a href="#" style="color:#2d89ef">Terms</a> and <a href="#" style="color:#2d89ef">Privacy</a>.</small>
+      </div>
+    </form>
+  </div>
+<script>
+  (function(){
+    const form = document.getElementById('registerForm');
+    const errorEl = document.getElementById('error');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function getSelectedRole() {
+      const radios = document.getElementsByName('role');
+      for (let r of radios) if (r.checked) return r.value;
+      return 'student';
+    }
+
+    form.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      errorEl.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+
+      const name = form.name.value.trim();
+      const email = form.email.value.trim();
+      const password = form.password.value.trim();
+      const role = getSelectedRole();
+      const skills = (form.skills.value || '').split(',').map(s => s.trim()).filter(Boolean);
+
+      if (!name || !email || !password) {
+        errorEl.textContent = 'Please fill in name, email, and password.';
+        errorEl.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create account';
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:5000/api/users/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, role, skills })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert('✅ ' + data.message);
+          form.reset();
+        } else {
+          errorEl.textContent = data.message || data.error || 'Something went wrong';
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = '⚠️ Unable to reach server. Check if backend is running.';
+        errorEl.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create account';
+      }
+    });
+  })();
+</script>
+
+  

@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Requests — SkillSwap</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --brand:#0f172a;
+      --accent:#0ea5a4;
+      --radius:10px;
+      --shadow: 0 8px 24px rgba(15,23,42,0.06);
+      --max:1100px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background:linear-gradient(180deg, #fbfdff 0%, var(--bg) 100%);
+      color:var(--brand);
+      padding:28px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:var(--max);
+    }
+
+    header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    header h1{margin:0;font-size:18px}
+    header p{margin:0;color:var(--muted);font-size:13px}
+
+    .panel {
+      background:var(--card);
+      border-radius:12px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(15,23,42,0.03);
+    }
+
+    .tabs { display:flex; gap:8px; margin-bottom:12px; }
+    .tab { padding:8px 12px; border-radius:8px; background:transparent; border:1px solid transparent; cursor:pointer; font-weight:600; color:var(--muted) }
+    .tab.active { background:linear-gradient(180deg,#fff,#f8fafc); color:var(--brand); box-shadow: 0 6px 14px rgba(2,6,23,0.04); border-color: rgba(15,23,42,0.04) }
+
+    .toolbar { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .search { flex:1; display:flex; gap:8px; align-items:center; }
+    .search input { width:100%; padding:9px 12px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); font-size:14px; }
+    .filter { padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:#fff; font-size:13px; color:var(--muted) }
+    .small { color:var(--muted); font-size:13px }
+
+    .grid {
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:12px;
+    }
+    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+
+    /* Left column: request list */
+    .list { max-height:560px; overflow:auto; padding:6px; display:flex; flex-direction:column; gap:8px; }
+    .request-card {
+      display:flex; gap:10px; align-items:flex-start; padding:10px; border-radius:10px; background:linear-gradient(180deg,#fff,#fcfeff); border:1px solid rgba(15,23,42,0.03);
+    }
+    .avatar { width:44px; height:44px; border-radius:8px; background:#eef2ff; display:flex; align-items:center; justify-content:center; font-weight:700; color:#1e293b }
+    .r-main { flex:1; }
+    .r-title { font-weight:700; font-size:14px; margin-bottom:4px }
+    .r-meta { color:var(--muted); font-size:13px; margin-bottom:6px }
+    .r-actions { display:flex; gap:8px; }
+
+    .pill { padding:6px 8px; background:#f1f5f9; border-radius:999px; font-size:12px; color:var(--muted); }
+
+    /* Right column: details */
+    .detail {
+      padding:12px; border-radius:10px; background:linear-gradient(180deg,#fff,#fbffff); border:1px solid rgba(15,23,42,0.03);
+      min-height:320px; display:flex; flex-direction:column;
+    }
+    .detail h3 { margin:0 0 8px 0 }
+    .detail .meta { color:var(--muted); font-size:13px; margin-bottom:12px }
+    .detail .desc { font-size:14px; color:#0f172a; margin-bottom:12px; white-space:pre-wrap }
+
+    .actions { margin-top:auto; display:flex; gap:10px; justify-content:flex-end }
+    button { cursor:pointer; padding:9px 12px; border-radius:8px; border:0; font-weight:700 }
+    .btn-accept { background:#10b981; color:white; box-shadow: 0 8px 24px rgba(16,185,129,0.12) }
+    .btn-decline { background:#ef4444; color:white; box-shadow: 0 8px 24px rgba(239,68,68,0.12) }
+    .btn-ghost { background:transparent; border:1px solid rgba(15,23,42,0.05); color:var(--muted) }
+
+    /* Table view fallback */
+    table { width:100%; border-collapse:collapse; font-size:14px }
+    table th, table td { text-align:left; padding:10px; border-bottom:1px solid rgba(15,23,42,0.03) }
+    .empty { color:var(--muted); text-align:center; padding:40px 0 }
+
+    /* Modal */
+    .modal-backdrop { position:fixed; inset:0; background:rgba(2,6,23,0.45); display:none; align-items:center; justify-content:center; z-index:50 }
+    .modal { background:#fff; width:720px; max-width:95%; border-radius:12px; padding:16px; box-shadow:0 20px 50px rgba(2,6,23,0.3) }
+    .chat { border-top:1px solid rgba(15,23,42,0.03); margin-top:12px; padding-top:12px; display:flex; flex-direction:column; gap:8px; max-height:260px; overflow:auto }
+    .chat .msg { padding:8px 10px; border-radius:8px; background:#f8fafc; align-self:flex-start; max-width:80% }
+    .chat .msg.me { background:#dcfce7; align-self:flex-end }
+    .compose { display:flex; gap:8px; margin-top:8px }
+    .compose input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06) }
+
+    /* tiny helpers */
+    .muted { color:var(--muted) }
+    .small-note { font-size:13px; color:var(--muted) }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Requests</h1>
+        <p class="small">Manage incoming tutoring / notes requests and your sent requests.</p>
+      </div>
+      <div class="small-note">Signed in as <strong>Kumud</strong></div>
+    </header>
+
+    <div class="panel" aria-live="polite">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="incoming" role="tab" aria-selected="true">Incoming</button>
+        <button class="tab" data-tab="sent" role="tab">Sent</button>
+        <div style="flex:1"></div>
+        <div class="toolbar">
+          <div class="search">
+            <input id="searchInput" placeholder="Search by user, skill or note..." />
+          </div>
+          <select id="statusFilter" class="filter">
+            <option value="all">All statuses</option>
+            <option value="requested">Requested</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="completed">Completed</option>
+          </select>
+          <button id="refreshBtn" class="tab" title="Refresh list">Refresh</button>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:8px;">
+        <!-- LEFT: list -->
+        <div>
+          <div class="small muted" style="margin-bottom:8px">Requests</div>
+          <div class="list" id="requestList" tabindex="0" aria-label="Request list">
+            <!-- cards injected by JS -->
+          </div>
+        </div>
+
+        <!-- RIGHT: detail -->
+        <div>
+          <div class="detail" id="detailPane" aria-live="polite">
+            <h3 id="detailTitle">Select a request</h3>
+            <div class="meta" id="detailMeta">Incoming requests will appear here.</div>
+            <div class="desc muted" id="detailDesc">Select a request from the left to view details, accept or decline."</div>
+
+            <div style="margin-top:8px">
+              <div class="small muted">Session info</div>
+              <div id="detailInfo" style="margin-top:6px" class="small-note">—</div>
+            </div>
+
+            <div class="actions" style="margin-top:12px">
+              <button id="btnDecline" class="btn-decline" disabled>Decline</button>
+              <button id="btnAccept" class="btn-accept" disabled>Accept</button>
+            </div>
+          </div>
+
+          <div style="margin-top:10px; text-align:center" class="small muted">
+            Tip: Accepting a request will move it to confirmed and (depending on workflow) lock credits or start payment processing.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: detail + chat -->
+  <div id="modal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal" role="document">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="avatar" id="modalAvatar">K</div>
+        <div style="flex:1">
+          <div id="modalTitle" style="font-weight:700">Request details</div>
+          <div class="muted small-note" id="modalMeta">by user • requested time</div>
+        </div>
+        <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div id="modalDesc" class="small-note">Full description and context from the requester.</div>
+        <div style="margin-top:12px">
+          <strong class="small-note">Session details</strong>
+          <div id="modalSession" style="margin-top:6px" class="small-note">—</div>
+        </div>
+
+        <div class="chat" id="chatBox" aria-live="polite" style="margin-top:12px">
+          <!-- messages -->
+        </div>
+
+        <div class="compose" style="margin-top:8px">
+          <input id="chatInput" placeholder="Write a quick reply..." aria-label="Message" />
+          <button class="btn btn-ghost" onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // NOTE: Backend endpoints you should implement:
+    // GET /requests/incoming?search=&status=
+    // GET /requests/sent?search=&status=
+    // POST /requests/:id/accept  -> accept/confirm the session
+    // POST /requests/:id/decline -> decline/cancel request
+    // POST /requests/:id/message -> send message (chat)
+    //
+    // This UI will fall back to mock data if those endpoints are not present.
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '/api';
+    const tabs = document.querySelectorAll('.tab');
+    const requestList = document.getElementById('requestList');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailMeta = document.getElementById('detailMeta');
+    const detailDesc = document.getElementById('detailDesc');
+    const detailInfo = document.getElementById('detailInfo');
+    const btnAccept = document.getElementById('btnAccept');
+    const btnDecline = document.getElementById('btnDecline');
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    let activeTab = 'incoming';
+    let requests = []; // current list
+    let activeRequest = null;
+
+    // wire tabs
+    tabs.forEach(t=>{
+      t.addEventListener('click', ()=> {
+        tabs.forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        activeTab = t.dataset.tab;
+        loadRequests();
+      });
+    });
+
+    // search/filter handlers
+    searchInput.addEventListener('input', debounce(loadRequests, 200));
+    statusFilter.addEventListener('change', loadRequests);
+    refreshBtn.addEventListener('click', loadRequests);
+
+    // Accept/Decline
+    btnAccept.addEventListener('click', ()=> { if(!activeRequest) return; actionAccept(activeRequest); });
+    btnDecline.addEventListener('click', ()=> { if(!activeRequest) return; actionDecline(activeRequest); });
+
+    // modal elements
+    const modal = document.getElementById('modal');
+    const modalAvatar = document.getElementById('modalAvatar');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMeta = document.getElementById('modalMeta');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalSession = document.getElementById('modalSession');
+    const chatBox = document.getElementById('chatBox');
+    const chatInput = document.getElementById('chatInput');
+
+    function openModal(req){
+      modalAvatar.textContent = initials(req.requester);
+      modalTitle.textContent = req.title;
+      modalMeta.textContent = `${req.requester} • ${req.requested_at}`;
+      modalDesc.textContent = req.message || '(no message)';
+      modalSession.textContent = `Start: ${req.start} • Duration: ${req.duration} min • Price: ${req.credits} credits`;
+      // populate chat with history
+      chatBox.innerHTML = '';
+      (req.messages || []).forEach(m=>{
+        const el = document.createElement('div');
+        el.className = 'msg' + (m.by === 'me' ? ' me' : '');
+        el.textContent = m.text;
+        chatBox.appendChild(el);
+      });
+      modal.style.display = 'flex';
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    function closeModal(){ modal.style.display = 'none'; }
+
+    function sendMessage(){
+      const txt = chatInput.value.trim();
+      if(!txt || !activeRequest) return;
+      // optimistic UI
+      const el = document.createElement('div'); el.className='msg me'; el.textContent = txt;
+      chatBox.appendChild(el); chatInput.value='';
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // POST to backend (mock fallback)
+      apiPost(`/requests/${activeRequest.id}/message`, {text:txt})
+        .then(()=> {
+          // attach to local cache
+          activeRequest.messages = activeRequest.messages || [];
+          activeRequest.messages.push({by:'me', text:txt, at: new Date().toISOString()});
+        }).catch(()=>{ /* ignore */ });
+    }
+
+    // initial load
+    loadRequests();
+
+    // loadRequests: tries backend, falls back to mock
+    async function loadRequests() {
+      const q = encodeURIComponent(searchInput.value.trim() || '');
+      const status = statusFilter.value;
+      const path = activeTab === 'incoming' ? `/requests/incoming?search=${q}&status=${status}` : `/requests/sent?search=${q}&status=${status}`;
+      try {
+        const res = await fetch(apiBase + path);
+        if(!res.ok) throw new Error('no-api');
+        const json = await res.json();
+        requests = json.data || [];
+      } catch (e){
+        // fallback mock
+        requests = mockRequests(activeTab);
+      }
+      renderList();
+      // pre-select first item
+      if(requests.length>0) selectRequest(requests[0].id);
+      else selectRequest(null);
+    }
+
+    function renderList(){
+      requestList.innerHTML = '';
+      if(requests.length === 0){
+        requestList.innerHTML = '<div class="empty">No requests found.</div>'; return;
+      }
+      requests.forEach(r=>{
+        const node = document.createElement('div');
+        node.className = 'request-card';
+        node.innerHTML = `
+          <div class="avatar">${initials(r.requester)}</div>
+          <div class="r-main" role="button" tabindex="0">
+            <div class="r-title">${r.title}</div>
+            <div class="r-meta">${r.requester} • ${r.requested_at} • ${r.start}</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="pill">${r.status}</div>
+              <div class="pill">${r.credits} credits</div>
+            </div>
+          </div>
+        `;
+        node.querySelector('.r-main').addEventListener('click', ()=> selectRequest(r.id));
+        requestList.appendChild(node);
+      });
+    }
+
+    function selectRequest(id){
+      activeRequest = requests.find(x=>x.id===id) || null;
+      if(!activeRequest){
+        detailTitle.textContent = 'Select a request';
+        detailMeta.textContent = 'No request selected';
+        detailDesc.textContent = 'Pick one from the left to see details';
+        detailInfo.textContent = '—';
+        btnAccept.disabled = true; btnDecline.disabled = true;
+        return;
+      }
+      detailTitle.textContent = activeRequest.title;
+      detailMeta.textContent = `${activeRequest.requester} • ${activeRequest.requested_at}`;
+      detailDesc.textContent = activeRequest.message || '(no message provided)';
+      detailInfo.textContent = `Start: ${activeRequest.start} • Duration: ${activeRequest.duration} min • Price: ${activeRequest.credits} credits`;
+      btnAccept.disabled = activeRequest.status !== 'requested';
+      btnDecline.disabled = activeRequest.status === 'cancelled' || activeRequest.status === 'completed';
+      // open modal on double-click or ctrl+click
+      detailTitle.onclick = ()=> openModal(activeRequest);
+    }
+
+    // actions
+    async function actionAccept(req){
+      if(!confirm(`Accept request from ${req.requester}? This will confirm the session.`)) return;
+      try {
+        const res = await apiPost(`/requests/${req.id}/accept`, {});
+        if(res && res.ok === false) throw new Error('api');
+        // optimistic update
+        req.status = 'confirmed';
+        alert('Request confirmed.');
+        loadRequests();
+      } catch(e){
+        // fallback: update locally
+        req.status = 'confirmed';
+        alert('(demo) Request marked confirmed locally. Wire POST /requests/:id/accept on server.');
+        loadRequests();
+      }
+    }
+
+    async function actionDecline(req){
+      if(!confirm(`Decline request from ${req.requester}?`)) return;
+      try {
+        const res = await apiPost(`/requests/${req.id}/decline`, {});
+        if(res && res.ok === false) throw new Error('api');
+        req.status = 'cancelled';
+        alert('Request declined.');
+        loadRequests();
+      } catch(e){
+        req.status = 'cancelled';
+        alert('(demo) Request declined locally. Wire POST /requests/:id/decline on server.');
+        loadRequests();
+      }
+    }
+
+    // small API helpers
+    async function apiPost(path, body){
+      try {
+        const res = await fetch(apiBase + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        if(!res.ok) throw new Error('bad');
+        return await res.json();
+      } catch(e){
+        throw e;
+      }
+    }
+
+    // tiny utils
+    function initials(name){
+      if(!name) return 'U';
+      return name.split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
+    }
+
+    function debounce(fn, wait){
+      let t;
+      return function(){ clearTimeout(t); t = setTimeout(()=>fn.apply(this, arguments), wait); }
+    }
+
+    // MOCK data for demo
+    function mockRequests(tab){
+      if(tab === 'incoming'){
+        return [
+          { id: 101, title: 'Linear Algebra — 1:1 tutoring', requester: 'Ravi Sharma', requested_at: '2025-11-09 17:12', start: '2025-11-11 18:00', duration: 60, credits: 8, status:'requested', message: 'I need help with eigenvalues and diagonalization. Would like a 60-minute session this Wednesday evening.', messages: [{by:'Ravi', text:'Are you available at 6pm?'}, {by:'me', text:'I can do 6:30pm'}] },
+          { id: 102, title: 'DSA notes request', requester: 'Neha Patel', requested_at: '2025-11-08 09:30', start: 'Download on approval', duration: 0, credits: 5, status:'requested', message: 'Could you share your "DSA Patterns" notes? I can pay 5 credits.' },
+          { id: 103, title: 'React Hooks follow-up', requester: 'Karan Mehta', requested_at: '2025-11-05 11:10', start: '2025-11-14 20:00', duration: 90, credits: 12, status:'confirmed', message: 'Let us confirm the agenda: hooks, context, memoization.' }
+        ];
+      } else {
+        return [
+          { id: 201, title: 'Booked: Calculus crash', requester: 'Me (sent)', requested_at: '2025-11-07 14:22', start: '2025-11-10 16:00', duration: 90, credits: 10, status:'confirmed', message: 'Looking forward to it.' },
+          { id: 202, title: 'Requested notes: OS summary', requester: 'Me (sent)', requested_at: '2025-11-01 10:12', start: 'Download on approval', duration: 0, credits: 3, status:'cancelled', message: 'Please share your OS cheat-sheet.' }
+        ];
+      }
+    }
+
+    // keyboard: open modal when detail clicked
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' && activeRequest) openModal(activeRequest);
+      if(e.key === 'Escape') closeModal();
+    });
+
+    // modal send message binds activeRequest
+    window.sendMessage = function(){
+      if(!activeRequest) return;
+      const txt = chatInput.value.trim();
+      if(!txt) return;
+      const el = document.createElement('div'); el.className = 'msg me'; el.textContent = txt; chatBox.appendChild(el);
+      chatInput.value = '';
+      // optimistic push
+      activeRequest.messages = activeRequest.messages || [];
+      activeRequest.messages.push({by:'me', text:txt});
+      // POST to server (best-effort)
+      apiPost(`/requests/${activeRequest.id}/message`, {text:txt}).catch(()=>{});
+    };
+
+    // close modal when clicking the backdrop
+    modal.addEventListener('click', (ev)=>{ if(ev.target === modal) closeModal(); });
+  </script>
+</body>
+</html>

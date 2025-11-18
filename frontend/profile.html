@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Profile — SkillSwap</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --brand:#0f172a;
+      --accent:#2563eb;
+      --accent-soft: rgba(37,99,235,0.08);
+      --success:#10b981;
+      --danger:#ef4444;
+      --radius:12px;
+      --max-width:1000px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      background: linear-gradient(180deg,#fbfdff,var(--bg));
+      color:var(--brand);
+      padding:28px;
+      display:flex;
+      justify-content:center;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:var(--max-width);
+    }
+
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    header h1 { margin:0; font-size:20px; }
+    header p { margin:0; color:var(--muted); font-size:13px; }
+
+    .grid {
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:14px;
+    }
+    @media (max-width:900px){ .grid { grid-template-columns:1fr } }
+
+    .card {
+      background:var(--card);
+      padding:14px;
+      border-radius:12px;
+      border:1px solid rgba(15,23,42,0.04);
+      box-shadow: 0 12px 30px rgba(2,6,23,0.04);
+    }
+
+    /* left column */
+    .profile-head { display:flex; gap:12px; align-items:center; }
+    .avatar {
+      width:92px; height:92px; border-radius:14px; background:#eef2ff; display:flex; align-items:center; justify-content:center; font-weight:800; color:#07316b; font-size:28px;
+      position:relative; overflow:hidden; border:1px solid rgba(15,23,42,0.03);
+    }
+    .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+
+    .meta h2 { margin:0; font-size:18px; }
+    .meta p { margin:6px 0 0 0; color:var(--muted); font-size:13px; }
+
+    .balance {
+      margin-top:12px; padding:10px; border-radius:10px; background:linear-gradient(180deg,#fff,#fbfdff); border:1px solid var(--accent-soft);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .balance .val { font-weight:800; font-size:20px; }
+
+    .skills { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .skill { padding:6px 8px; border-radius:999px; background:#f1f5f9; color:var(--muted); font-weight:700; font-size:13px; }
+
+    .badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .badge { padding:8px 10px; border-radius:10px; background:linear-gradient(180deg,#fff,#f8fffd); border:1px solid rgba(15,23,42,0.03); font-weight:700; font-size:13px; }
+
+    /* right column */
+    .section-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .section-title h3 { margin:0; font-size:16px; }
+    .section-title .muted { color:var(--muted); font-size:13px; }
+
+    form.profile-form { display:flex; flex-direction:column; gap:12px; }
+    label { font-weight:700; font-size:13px; margin-bottom:6px; display:block; }
+    input[type="text"], input[type="email"], textarea, select {
+      width:100%; padding:10px 12px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); font-size:14px; background:linear-gradient(180deg,#fff,#fbfdff);
+    }
+    textarea { min-height:84px; resize:vertical; }
+
+    .row { display:flex; gap:10px; }
+    .col { flex:1; }
+
+    .availability { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+    .day { padding:8px 10px; border-radius:8px; background:#fff; border:1px solid rgba(15,23,42,0.05); cursor:pointer; user-select:none; font-weight:700; color:var(--muted) }
+    .day.active { background:linear-gradient(180deg,#eef2ff,#e6f0ff); border-color:rgba(37,99,235,0.12); color:var(--brand) }
+
+    .actions { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
+    .btn { padding:9px 12px; border-radius:8px; border:0; cursor:pointer; font-weight:700 }
+    .btn.primary { background:var(--accent); color:white; box-shadow: 0 8px 20px rgba(37,99,235,0.12) }
+    .btn.ghost { background:transparent; border:1px solid rgba(15,23,42,0.06); color:var(--muted) }
+
+    .recent { margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+    .recent .row { padding:10px; border-radius:8px; background:linear-gradient(180deg,#fff,#fcfeff); border:1px solid rgba(15,23,42,0.03); display:flex; justify-content:space-between; align-items:center; }
+    .muted { color:var(--muted) }
+
+    .danger { color:var(--danger); font-weight:800 }
+
+    /* small responsive tweaks */
+    @media (max-width:900px){
+      .avatar { width:72px; height:72px; }
+      .grid { gap:12px; }
+    }
+
+    /* subtle form note */
+    .hint { font-size:13px; color:var(--muted); margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Profile</h1>
+        <p class="muted">Public profile and settings — what others see when they discover you.</p>
+      </div>
+      <div class="muted">Signed in as <strong>Kumud</strong></div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: profile summary -->
+      <aside class="card">
+        <div class="profile-head">
+          <div class="avatar" id="avatar">
+            <!-- initial or image -->
+            <span id="avatarInitial">KK</span>
+          </div>
+
+          <div class="meta">
+            <h2 id="displayName">Kumud Kumud</h2>
+            <p id="displayBio" class="muted">Data science enthusiast • I teach exam strategy and DSA patterns.</p>
+            <div class="muted" style="margin-top:6px" id="location">Bengaluru, India</div>
+          </div>
+        </div>
+
+        <div class="balance" style="margin-top:12px">
+          <div>
+            <div class="muted">Time credits</div>
+            <div class="val" id="creditBalance">120</div>
+          </div>
+          <div style="text-align:right">
+            <div class="muted">Reputation</div>
+            <div style="font-weight:800">4.8 ★</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div style="font-weight:800">Skills</div>
+          <div class="skills" id="skillsList">
+            <!-- skill chips -->
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div style="font-weight:800">Badges</div>
+          <div class="badges" id="badgesList"></div>
+        </div>
+
+        <div style="margin-top:12px" class="hint">
+          Tip: Make your title and preview short — learners scan results quickly.
+        </div>
+      </aside>
+
+      <!-- RIGHT: editable details -->
+      <div class="card">
+        <div class="section-title">
+          <h3>Public details</h3>
+          <div class="muted">Edit what learners see</div>
+        </div>
+
+        <form class="profile-form" id="profileForm" onsubmit="return saveProfile(event)">
+          <div class="row">
+            <div class="col">
+              <label for="name">Full name</label>
+              <input id="name" type="text" placeholder="Your full name" />
+            </div>
+            <div class="col">
+              <label for="email">Email (private)</label>
+              <input id="email" type="email" placeholder="you@example.com" />
+            </div>
+          </div>
+
+          <div>
+            <label for="bio">Bio</label>
+            <textarea id="bio" placeholder="Short, punchy description for listings (100–150 chars)"></textarea>
+            <div class="hint">Example: 'Software engineer, teaches React & system design. 1-1 tutoring and notes.' </div>
+          </div>
+
+          <div class="row">
+            <div class="col">
+              <label for="locationInput">Location</label>
+              <input id="locationInput" type="text" placeholder="City, Country" />
+            </div>
+            <div class="col">
+              <label for="profilePhoto">Profile photo</label>
+              <input id="profilePhoto" type="file" accept="image/*" />
+              <div class="hint">Square images work best. We'll upload to S3 in production (presigned URL flow).</div>
+            </div>
+          </div>
+
+          <div>
+            <label>Skills</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="skillInput" type="text" placeholder="Add a skill and press Enter (e.g., react)" />
+              <button type="button" class="btn ghost" onclick="addSkill()">Add</button>
+            </div>
+            <div class="skills" id="skillsEdit" style="margin-top:8px"></div>
+          </div>
+
+          <div>
+            <label>Availability (select preferred days)</label>
+            <div class="availability" id="availability">
+              <div class="day" data-day="mon">Mon</div>
+              <div class="day" data-day="tue">Tue</div>
+              <div class="day" data-day="wed">Wed</div>
+              <div class="day" data-day="thu">Thu</div>
+              <div class="day" data-day="fri">Fri</div>
+              <div class="day" data-day="sat">Sat</div>
+              <div class="day" data-day="sun">Sun</div>
+            </div>
+            <div class="hint">This is a lightweight availability — booking will still ask for exact time slots.</div>
+          </div>
+
+          <div>
+            <label>Public settings</label>
+            <div style="display:flex;gap:8px;">
+              <label><input type="checkbox" id="showEmail"> Show email on profile</label>
+              <label><input type="checkbox" id="acceptCash" checked> Accept cash payments</label>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn ghost" onclick="resetProfile()">Reset</button>
+            <button type="submit" class="btn primary">Save profile</button>
+          </div>
+        </form>
+
+        <div style="margin-top:18px" class="section-title">
+          <h3>Recent activity</h3>
+          <div class="muted">Last actions on the platform</div>
+        </div>
+
+        <div class="recent" id="recentList">
+          <!-- recent sessions / notes -->
+        </div>
+
+        <div style="margin-top:12px; border-top:1px dashed rgba(15,23,42,0.04); padding-top:12px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:700">Danger zone</div>
+            <div class="muted" style="font-size:13px">Delete account and data. This is irreversible.</div>
+          </div>
+          <div>
+            <button class="btn ghost" onclick="downloadData()">Export data</button>
+            <button class="btn" style="background:var(--danger); color:white; border:0" onclick="deleteAccount()">Delete account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // lightweight, human-like profile page behavior with mock data
+    const mock = {
+      id: 42,
+      name: 'Kumud Kumud',
+      email: 'kumud@example.com',
+      bio: "Data science enthusiast • I teach exam strategy and DSA patterns.",
+      location: 'Bengaluru, India',
+      credits: 120,
+      reputation: 4.8,
+      skills: ['react','dsa','exam-strategy'],
+      badges: ['Top tutor', '100 credits earned'],
+      availability: ['mon','wed','fri'],
+      recent: [
+        {id:1, kind:'session', title:'React Hooks - 1:1', when:'Nov 9, 2025', credits:+8},
+        {id:2, kind:'note', title:'DSA Patterns v2', when:'Nov 8, 2025', credits:+10},
+        {id:3, kind:'session', title:'Calculus Crash', when:'Nov 1, 2025', credits:-5}
+      ]
+    };
+
+    // init DOM
+    document.addEventListener('DOMContentLoaded', ()=> {
+      loadProfile(mock);
+      bindEvents();
+    });
+
+    function loadProfile(data){
+      document.getElementById('displayName').textContent = data.name;
+      document.getElementById('displayBio').textContent = data.bio;
+      document.getElementById('location').textContent = data.location;
+      document.getElementById('creditBalance').textContent = data.credits;
+      // avatar initial
+      const initials = data.name.split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('avatarInitial').textContent = initials;
+
+      // skills
+      const skillsList = document.getElementById('skillsList');
+      skillsList.innerHTML = '';
+      data.skills.forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'skill';
+        el.textContent = s;
+        skillsList.appendChild(el);
+      });
+
+      // badges
+      const badges = document.getElementById('badgesList');
+      badges.innerHTML = '';
+      data.badges.forEach(b => {
+        const el = document.createElement('div');
+        el.className = 'badge';
+        el.textContent = b;
+        badges.appendChild(el);
+      });
+
+      // fill edit form
+      document.getElementById('name').value = data.name;
+      document.getElementById('email').value = data.email;
+      document.getElementById('bio').value = data.bio;
+      document.getElementById('locationInput').value = data.location;
+      // skills edit chips
+      renderSkillEdit(data.skills);
+      // availability
+      document.querySelectorAll('#availability .day').forEach(d => {
+        const day = d.dataset.day;
+        if(data.availability.includes(day)) d.classList.add('active'); else d.classList.remove('active');
+      });
+      // recent
+      const recentList = document.getElementById('recentList');
+      recentList.innerHTML = '';
+      data.recent.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<div style="flex:1"><div style="font-weight:700">${escapeHtml(r.title)}</div><div class="muted small">${r.kind} • ${r.when}</div></div><div style="min-width:80px;text-align:right">${r.credits>0?'+':''}${r.credits} cr</div>`;
+        recentList.appendChild(row);
+      });
+    }
+
+    function bindEvents(){
+      // profile photo preview
+      const photoInput = document.getElementById('profilePhoto');
+      photoInput.addEventListener('change', (e)=> {
+        const f = e.target.files && e.target.files[0];
+        if(!f) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = document.createElement('img');
+          img.src = ev.target.result;
+          const avatar = document.getElementById('avatar');
+          avatar.innerHTML = '';
+          avatar.appendChild(img);
+        };
+        reader.readAsDataURL(f);
+      });
+
+      // availability toggles
+      document.querySelectorAll('#availability .day').forEach(d => {
+        d.addEventListener('click', ()=> d.classList.toggle('active'));
+      });
+
+      // skill add via enter
+      document.getElementById('skillInput').addEventListener('keydown', (e)=> {
+        if(e.key === 'Enter'){ e.preventDefault(); addSkill(); }
+      });
+    }
+
+    function renderSkillEdit(skills){
+      const out = document.getElementById('skillsEdit');
+      out.innerHTML = '';
+      skills.forEach((s, i) => {
+        const el = document.createElement('div');
+        el.className = 'skill';
+        el.innerHTML = `${s} <button style="margin-left:8px;background:none;border:0;cursor:pointer;font-weight:700;color:#374151" title="remove" onclick="removeSkill(${i})">&times;</button>`;
+        out.appendChild(el);
+      });
+    }
+
+    function addSkill(){
+      const input = document.getElementById('skillInput');
+      const v = input.value.trim().toLowerCase().replace(/[^\w\- ]/g,'').slice(0,28);
+      if(!v) return;
+      if(mock.skills.includes(v)){ input.value=''; return; }
+      mock.skills.push(v);
+      renderSkillEdit(mock.skills);
+      input.value = '';
+      // update left column
+      const skillsList = document.getElementById('skillsList');
+      const chip = document.createElement('div'); chip.className='skill'; chip.textContent = v;
+      skillsList.appendChild(chip);
+    }
+
+    function removeSkill(i){
+      mock.skills.splice(i,1);
+      renderSkillEdit(mock.skills);
+      // re-render left
+      const skillsList = document.getElementById('skillsList');
+      skillsList.innerHTML = '';
+      mock.skills.forEach(s => { const el = document.createElement('div'); el.className='skill'; el.textContent = s; skillsList.appendChild(el); });
+    }
+
+    function saveProfile(e){
+      e.preventDefault();
+      // gather fields (in production: POST to backend)
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        bio: document.getElementById('bio').value.trim(),
+        location: document.getElementById('locationInput').value.trim(),
+        skills: mock.skills,
+        availability: Array.from(document.querySelectorAll('#availability .day.active')).map(d=>d.dataset.day),
+        showEmail: document.getElementById('showEmail')?.checked || false,
+        acceptCash: document.getElementById('acceptCash')?.checked || false
+      };
+      // simple client-side validation
+      if(!payload.name) return alert('Please enter your name.');
+      if(!payload.bio) if(!confirm('Publish without a bio?')) return;
+
+      // optimistic UI update
+      mock.name = payload.name; mock.bio = payload.bio; mock.location = payload.location;
+      loadProfile(mock);
+      alert('Profile saved (demo). In production, POST this payload to your API (POST /users/:id).');
+      return false;
+    }
+
+    function resetProfile(){
+      if(!confirm('Reset changes to last saved profile?')) return;
+      loadProfile(mock);
+    }
+
+    function downloadData(){
+      // Mock export: create a JSON blob
+      const blob = new Blob([JSON.stringify(mock, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `profile-${mock.id}.json`; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function deleteAccount(){
+      if(!confirm('Delete your account and all data? This cannot be undone.')) return;
+      // In production: call DELETE /users/:id then redirect
+      alert('(demo) Account deletion simulated. Implement server-side deletion.');
+    }
+
+    // small escape helper
+    function escapeHtml(s){ return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+</body>
+</html>
